@@ -23,7 +23,7 @@ TO DO LIST:
 */
 BAKKESMOD_PLUGIN(SpotifyTool, "Spotify Tool Plugin", "0.1.0.0", PERMISSION_ALL)
 using namespace std;
-string get_token, get_token2, pos, command_token, command_end, command;
+string get_token, get_token2, pos, command_token, command_end, command, code;
 string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 bool stoolEnabled = true;
@@ -41,19 +41,16 @@ void SpotifyTool::onLoad()
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		Render(canvas);
 		});
-	get_token = "https://google.com/callback?code=AQD4jiy230t5Us2gu5R-3dtuUHblXf-7fcuPR0p77lY7HVpbqYFXP1mTql8pECYxEE6hHRS5bLXCaasIYkqAFJORoCgQMAQfHKUcU8_WSs08ucV7soBKUHrWt5GD3IRxBanpTuW355H5qbk0ghN3gFz-iJR9CsxHHFRyIHJkx1sZnDDdSAkSEnb6IunpCeMRnOGlY-tsjUj33fwK4yAYGiBcyZSwSm5lodSmn8N-sKl88K6ZXyjkjw";
-	pos = get_token.find("code =");
-	get_token2 = get_token.substr(26, 246);
+	code = "";
 	CurlRequest req;
 	req.url = "https://accounts.spotify.com/api/token";
 	req.verb = "GET";
 	req.headers = {
 
-		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU =" }
-
+		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU =" },
+		{"Content-Type", "application/x-www-form-urlencoded"}
 	};
-	req.body = "-d grant_type=authorization_code&code=AQDUcREXNjjXmOQyYJ9m4UWa701f-3a-6HI-S_lfcGzF9TgCQccPGIX8xcIp5tCKFxGSOKFnBejdIMUJxolaZbkpvkqZ1L63j5VCAh-sDIUBb6Lq3SFzXm_xzf1oZQG2Cv9KaTWRMjAFoZSCeRtwWj9cv4yIDftvAT77yP5v9UaSXUSIwXM90EZAqidXqjqDEnTIMoRTFc8xDz1YPi7n1tErOYMd2Hsh30bI1FaQAWZYreimmYH1vA&redirect_uri=http%3A%2F%2Flocalhost:8888%2Fauth%2Fspotify%2Fcallback";
-	
+	req.body = "grant_type=authorization_type&code="+code;
 	LOG("sending body request");
 	HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
 		{
@@ -90,11 +87,16 @@ void SpotifyTool::WriteInFile(std::string _filename, std::string _value)
 		cvarManager->log("Value to write was: " + _value);
 	}
 }
+/*void SpotifyTool::SetupSpotify() {
+
+}
+*/
+
 void SpotifyTool::onUnload() {
 	cvarManager->log("I was too stool for this world B'(");
 	WriteInFile("Song.txt", "No Spotify Activty");
 }
-// in a .cpp file 
+
 void SpotifyTool::Render(CanvasWrapper canvas) {
 	float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
 	if (!stool_scale) { return; }
