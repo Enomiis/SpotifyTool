@@ -67,6 +67,24 @@ void SpotifyTool::onLoad()
 		setup_status = "true";
 		WriteInFile("setup_status.txt",setup_status);
 	}
+	refresh_token = LoadofFile("refresh_token.txt");
+	CurlRequest req_refresh;
+	req_refresh.url = "https://accounts.spotify.com/api/token";
+	req_refresh.verb = "POST";
+	req_refresh.headers = {
+
+		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+		{"Content-Type", "application/x-www-form-urlencoded"}
+	};
+	req_refresh.body = "grant_type=refresh_token&refresh_token=" + refresh_token;
+	HttpWrapper::SendCurlRequest(req_refresh, [this](int refresh_token, std::string result)
+		{
+			token = result;
+			json token_complete = json::parse(token.begin(), token.end());
+			access_token = token_complete["access_token"];
+			WriteInFile("access_token.txt", access_token);
+		});
+	
 	access_token = LoadofFile("access_token.txt");
 	CurlRequest req_playing;
 	req_playing.url = "https://api.spotify.com/v1/me/player/currently-playing";
@@ -143,6 +161,7 @@ void SpotifyTool::SetupSpotify() {
 void SpotifyTool::onUnload() {
 	cvarManager->log("I was too stool for this world B'(");
 	WriteInFile("song.txt", "No Spotify Activity");
+	WriteInFile("access_token.txt","");
 }
 
 void SpotifyTool::Render(CanvasWrapper canvas) {
