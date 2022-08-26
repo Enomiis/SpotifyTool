@@ -1,16 +1,19 @@
 #include "pch.h"
 #include "SpotifyTool.h"
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <nlohmann/json.hpp>
+#include <string>
+
 /*
 
 TO DO LIST:
 
- Fix CURL
+ Fix CURL (DONE)
  Fix Copy/Paste user input
- Parse access token
- Parse refresh token
+ Parse access token (DONE)
+ Parse refresh token (DONE)
  Get song
  Get picture
  Picture in options
@@ -21,41 +24,72 @@ TO DO LIST:
  LEARN TO FCKG CODE IN C++
 
 */
+
 BAKKESMOD_PLUGIN(SpotifyTool, "Spotify Tool Plugin", "0.1.0.0", PERMISSION_ALL)
 using namespace std;
-string get_token, get_token2, pos, command_token, command_end, command, code;
-string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
+using json = nlohmann::json;
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
-bool stoolEnabled = true;
-string song;
-fstream file;
-string response;
 
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
-	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10);
+	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10, true);
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
 		}, "", PERMISSION_ALL);
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		Render(canvas);
 		});
-	code = "";
-	CurlRequest req;
-	req.url = "https://accounts.spotify.com/api/token";
-	req.verb = "GET";
-	req.headers = {
+	code = "AQCcGLf-xVtegQhQd8fmm3bNzkc2L6NHdtqNRifDp6ONv-zv4RQefFo1AefhiuaV2zXyQ6WIvzg-KuNZFgKmoMA7OKxNeBZqp2OB5qFfwrkKnlu_U6r6cPQ2gqLcEVToT5fonUtIAJHah6NeCOBL0QuN5PFvW_ug1WzU0CvtgRY8nOP0Nw8AbxLEjS0vgCPH0fXrtGW-nOIZeBjH7DbySJiXZXBBtunr35ZGQyVhHcSLpOq5AqykDLa-KefUVLdiZRcHH_zj8NQ";
+	setup_status = LoadofFile("setup_status.txt");
+	if (setup_status == "false") {
+		CurlRequest req;
+		req.url = "https://accounts.spotify.com/api/token";
+		req.verb = "POST";
+		req.headers = {
 
-		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU =" },
-		{"Content-Type", "application/x-www-form-urlencoded"}
+			{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+			{"Content-Type", "application/x-www-form-urlencoded"}
+		};
+		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code;
+
+		LOG("sending body request");
+		HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
+			{
+				token = result;
+				json token_complete = json::parse(token.begin(), token.end());
+				refresh_token = token_complete["refresh_token"];
+				access_token = token_complete["access_token"];
+				WriteInFile("access_token.txt", access_token);
+				WriteInFile("refresh_token.txt", refresh_token);
+				LOG("Body_Result{}",result);
+			});
+		setup_status = "true";
+		WriteInFile("setup_status.txt",setup_status);
+	}
+	access_token = LoadofFile("access_token.txt");
+	CurlRequest req_playing;
+	req_playing.url = "https://api.spotify.com/v1/me/player/currently-playing";
+	req_playing.verb = "GET";
+	req_playing.headers = {
+
+		{"Authorization", "Bearer "+access_token},
+		{"Content-Type", "application/json"}
 	};
-	req.body = "grant_type=authorization_type&code="+code;
-	LOG("sending body request");
-	HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
+	
+	HttpWrapper::SendCurlRequest(req_playing, [this](int access_token, std::string result_playing)
 		{
-			LOG("Body result{}", result);
+			
+			currently_playing = result_playing; 
+			LOG("Body_Result{}",result_playing);
+			/*json playing_json = json::parse(currently_playing.begin(), currently_playing.end());
+			song = playing_json["item"]["name"];
+			artist = playing_json["artists"]["name"];
+			picture = playing_json["access_token"];
+			song_artist = song + " - " + artist;
+			WriteInFile("song.txt", song_artist);*/
 		});
+
 	cvarManager->log("working bro");
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetDataFolder() / "spotifytool_logo.png");
 	gameWrapper->Toast("SpotifyTool", "SpotifyTool is loaded", "spotifytool_logo", 5.0, ToastType_Warning);
@@ -87,14 +121,28 @@ void SpotifyTool::WriteInFile(std::string _filename, std::string _value)
 		cvarManager->log("Value to write was: " + _value);
 	}
 }
-/*void SpotifyTool::SetupSpotify() {
+string SpotifyTool::LoadofFile(std::string _filename)
+{
+	string value;
+	ifstream stream;
+	stream.open(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + _filename);
+	if (stream.is_open())
+	{
+		stream >> value;
+		stream.close();
+		cout << value;
+	}
+	return value;
+}
+/*
+void SpotifyTool::SetupSpotify() {
 
 }
 */
 
 void SpotifyTool::onUnload() {
 	cvarManager->log("I was too stool for this world B'(");
-	WriteInFile("Song.txt", "No Spotify Activty");
+	WriteInFile("song.txt", "No Spotify Activity");
 }
 
 void SpotifyTool::Render(CanvasWrapper canvas) {
