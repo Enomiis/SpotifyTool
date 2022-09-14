@@ -14,7 +14,7 @@ TO DO LIST:
  Fix Copy/Paste user input
  Parse access token (DONE)
  Parse refresh token (DONE)
- Get song
+ Get song (DONE)
  Get picture
  Picture in options
  Skip/Pause
@@ -30,6 +30,8 @@ using namespace std;
 using json = nlohmann::json;
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+
+
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -40,7 +42,8 @@ void SpotifyTool::onLoad()
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		Render(canvas);
 		});
-	code = "AQCcGLf-xVtegQhQd8fmm3bNzkc2L6NHdtqNRifDp6ONv-zv4RQefFo1AefhiuaV2zXyQ6WIvzg-KuNZFgKmoMA7OKxNeBZqp2OB5qFfwrkKnlu_U6r6cPQ2gqLcEVToT5fonUtIAJHah6NeCOBL0QuN5PFvW_ug1WzU0CvtgRY8nOP0Nw8AbxLEjS0vgCPH0fXrtGW-nOIZeBjH7DbySJiXZXBBtunr35ZGQyVhHcSLpOq5AqykDLa-KefUVLdiZRcHH_zj8NQ";
+	code = LoadofFile("code.txt");
+	LOG("Body_result{}",code);
 	setup_status = LoadofFile("setup_status.txt");
 	if (setup_status == "false") {
 		CurlRequest req;
@@ -57,12 +60,13 @@ void SpotifyTool::onLoad()
 		HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
 			{
 				token = result;
+				WriteInFile("return.txt",token);
 				json token_complete = json::parse(token.begin(), token.end());
 				refresh_token = token_complete["refresh_token"];
 				access_token = token_complete["access_token"];
 				WriteInFile("access_token.txt", access_token);
 				WriteInFile("refresh_token.txt", refresh_token);
-				LOG("Body_Result{}",result);
+				LOG("Body result:\n{}", token);
 			});
 		setup_status = "true";
 		WriteInFile("setup_status.txt",setup_status);
@@ -78,34 +82,11 @@ void SpotifyTool::onLoad()
 	};
 	req_refresh.body = "grant_type=refresh_token&refresh_token=" + refresh_token;
 	HttpWrapper::SendCurlRequest(req_refresh, [this](int refresh_token, std::string result)
-		{
+	 {
 			token = result;
 			json token_complete = json::parse(token.begin(), token.end());
 			access_token = token_complete["access_token"];
 			WriteInFile("access_token.txt", access_token);
-		});
-	
-	access_token = LoadofFile("access_token.txt");
-	CurlRequest req_playing;
-	req_playing.url = "https://api.spotify.com/v1/me/player/currently-playing";
-	req_playing.verb = "GET";
-	req_playing.headers = {
-
-		{"Authorization", "Bearer "+access_token},
-		{"Content-Type", "application/json"}
-	};
-	
-	HttpWrapper::SendCurlRequest(req_playing, [this](int access_token, std::string result_playing)
-		{
-			
-			currently_playing = result_playing; 
-			LOG("Body_Result{}",result_playing);
-			/*json playing_json = json::parse(currently_playing.begin(), currently_playing.end());
-			song = playing_json["item"]["name"];
-			artist = playing_json["artists"]["name"];
-			picture = playing_json["access_token"];
-			song_artist = song + " - " + artist;
-			WriteInFile("song.txt", song_artist);*/
 		});
 
 	cvarManager->log("working bro");
@@ -146,7 +127,7 @@ string SpotifyTool::LoadofFile(std::string _filename)
 	stream.open(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + _filename);
 	if (stream.is_open())
 	{
-		stream >> value;
+		getline(stream, value);
 		stream.close();
 		cout << value;
 	}
@@ -159,12 +140,13 @@ void SpotifyTool::SetupSpotify() {
 */
 
 void SpotifyTool::onUnload() {
-	cvarManager->log("I was too stool for this world B'(");
+	
 	WriteInFile("song.txt", "No Spotify Activity");
-	WriteInFile("access_token.txt","");
+
 }
 
 void SpotifyTool::Render(CanvasWrapper canvas) {
+	
 	float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
 	if (!stool_scale) { return; }
 	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
@@ -184,32 +166,27 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 	float yLoc = yLocCvar.getFloatValue();
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = enableCvar.getBoolValue();
+
 	if (enabled) {
 		canvas.SetPosition(Vector2{ int(xLoc), int(yLoc) });
 		// Draw box here
 		Vector2 drawLoc = {
-			int(xLoc)*stool_scale,
-			int(yLoc)*stool_scale };
-		Vector2 sizeBox = {
-			175*float(stool_scale),
-			30*float(stool_scale)
-		};
-		canvas.SetPosition(drawLoc);
-
-		// Set background color
-		canvas.SetColor(LinearColor{ 0, 0, 0, 150 });
-		canvas.FillBox(sizeBox);
+			int(xLoc) * stool_scale,
+			int(yLoc) * stool_scale };
 		// Draw text
 		Vector2 textPos = { float(drawLoc.X + 25), float(drawLoc.Y + 5) };
-	
+
 		// Set the position
 		canvas.SetPosition(textPos);
 		canvas.SetColor(textColor);
-		file.open(song_file, ios::in);
-		if (file.is_open()) {
-			getline(file, song);
+
+		time += ImGui::GetIO().DeltaTime;
+		if (time > 30)
+		{
+			time = 0;
+			Sync_spotify();
 		}
-		file.close();
+		song = LoadofFile("song.txt");
 		canvas.DrawString(song, stool_scale, stool_scale);
 	}
 	else
@@ -217,15 +194,41 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 		return;
 	}
 }
+
 void SpotifyTool::Sync_spotify() {
 	
+	access_token = LoadofFile("access_token.txt");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_playing;
+	req_playing.url = "https://api.spotify.com/v1/me/player/currently-playing";
+	req_playing.verb = "GET";
+	req_playing.headers = {
+
+		{"Authorization", auth_bearer},
+		{"Content-Type", "application/json"}
+	};
+
+	HttpWrapper::SendCurlRequest(req_playing, [this](int access_token, std::string result_playing)
+		{
+
+			currently_playing = result_playing;
+			WriteInFile("song_request.json", currently_playing);
+			LOG("Body_Result{}", auth_bearer);
+			LOG("Body_Result{}", result_playing);
+			if (currently_playing != "[json.exception.type_error.302] type must be string, but is null") {
+				json playing_json = json::parse(currently_playing);
+				song = playing_json["item"]["name"];
+				LOG("Song{}", song);
+				WriteInFile("song.txt", "");
+				WriteInFile("song.txt", song);
+				artist = playing_json["item"]["artists"][0]["name"];
+				/*picture = playing_json["access_token"];*/
+				song_artist = song + " - " + artist;
+				WriteInFile("song.txt", song_artist);
+			}
+		});
 	
-	cvarManager->log("Sync done");
-	file.open(song_file, ios::in);
-	if (file.is_open()) {
-		getline(file, song);
-	}
-	file.close();
 }
 void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 {
@@ -235,13 +238,13 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
 {
-	return "SpotifyTool";
+	return "SpotifyTool early beta";
 }
 
 bool inDragMode = false;
 
 void SpotifyTool::RenderSettings() {
-	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify");
+	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
 	}
@@ -295,8 +298,9 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::ColorEdit4("Text Color", &textColor.R)) {
 		textColorVar.setValue(textColor * 255);
 	}
-	static char command[128];
+	/*static char command[128];
 	ImGui::InputText("Input callback", command, IM_ARRAYSIZE(command));
+	*/
 }
 
 void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
