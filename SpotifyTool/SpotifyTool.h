@@ -23,7 +23,8 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         std::string currently_playing;
         float timer,timer_reset;
         bool song_sync = true;
-        float time;
+        bool inDragMode = false;
+        float time, time2;
 
     private:
         virtual void onLoad();
@@ -36,5 +37,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
         void Render(CanvasWrapper canvas);
         void Sync_spotify();
+        void Setup_spotify();
+        void Refresh_token();
         std::shared_ptr<ImageWrapper> background_v1;
     };

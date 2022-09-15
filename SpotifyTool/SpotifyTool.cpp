@@ -42,52 +42,9 @@ void SpotifyTool::onLoad()
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		Render(canvas);
 		});
-	code = LoadofFile("code.txt");
-	LOG("Body_result{}",code);
-	setup_status = LoadofFile("setup_status.txt");
-	if (setup_status == "false") {
-		CurlRequest req;
-		req.url = "https://accounts.spotify.com/api/token";
-		req.verb = "POST";
-		req.headers = {
-
-			{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
-			{"Content-Type", "application/x-www-form-urlencoded"}
-		};
-		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code;
-
-		LOG("sending body request");
-		HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
-			{
-				token = result;
-				WriteInFile("return.txt",token);
-				json token_complete = json::parse(token.begin(), token.end());
-				refresh_token = token_complete["refresh_token"];
-				access_token = token_complete["access_token"];
-				WriteInFile("access_token.txt", access_token);
-				WriteInFile("refresh_token.txt", refresh_token);
-				LOG("Body result:\n{}", token);
-			});
-		setup_status = "true";
-		WriteInFile("setup_status.txt",setup_status);
-	}
-	refresh_token = LoadofFile("refresh_token.txt");
-	CurlRequest req_refresh;
-	req_refresh.url = "https://accounts.spotify.com/api/token";
-	req_refresh.verb = "POST";
-	req_refresh.headers = {
-
-		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
-		{"Content-Type", "application/x-www-form-urlencoded"}
-	};
-	req_refresh.body = "grant_type=refresh_token&refresh_token=" + refresh_token;
-	HttpWrapper::SendCurlRequest(req_refresh, [this](int refresh_token, std::string result)
-	 {
-			token = result;
-			json token_complete = json::parse(token.begin(), token.end());
-			access_token = token_complete["access_token"];
-			WriteInFile("access_token.txt", access_token);
-		});
+	Setup_spotify();
+	Refresh_token();
+	Sync_spotify();
 
 	cvarManager->log("working bro");
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetDataFolder() / "spotifytool_logo.png");
@@ -133,11 +90,7 @@ string SpotifyTool::LoadofFile(std::string _filename)
 	}
 	return value;
 }
-/*
-void SpotifyTool::SetupSpotify() {
 
-}
-*/
 
 void SpotifyTool::onUnload() {
 	
@@ -181,10 +134,17 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 		canvas.SetColor(textColor);
 
 		time += ImGui::GetIO().DeltaTime;
+		time2 += ImGui::GetIO().DeltaTime;
 		if (time > 30)
 		{
-			time = 0;
 			Sync_spotify();
+			time = 0;
+		}
+		if (time2 > 3500)
+		{
+			
+			Refresh_token();
+			time2 = 0;
 		}
 		song = LoadofFile("song.txt");
 		canvas.DrawString(song, stool_scale, stool_scale);
@@ -192,6 +152,43 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 	else
 	{
 		return;
+	}
+}
+
+
+#pragma region Spotify
+void SpotifyTool::Setup_spotify() {
+	code = LoadofFile("code.txt");
+	LOG("Body_result{}", code);
+	setup_status = LoadofFile("setup_status.txt");
+	if (setup_status == "false") {
+		CurlRequest req;
+		req.url = "https://accounts.spotify.com/api/token";
+		req.verb = "POST";
+		req.headers = {
+
+			{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+			{"Content-Type", "application/x-www-form-urlencoded"}
+		};
+		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code;
+
+		LOG("sending body request");
+		HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
+			{
+				if (code == 200) {
+					token = result;
+					WriteInFile("return.txt", token);
+					json token_complete = json::parse(token.begin(), token.end());
+					refresh_token = token_complete["refresh_token"];
+					access_token = token_complete["access_token"];
+					WriteInFile("access_token.txt", access_token);
+					WriteInFile("refresh_token.txt", refresh_token);
+
+				}
+				LOG("Body result:\n{}", result);
+			});
+		setup_status = "true";
+		WriteInFile("setup_status.txt", setup_status);
 	}
 }
 
@@ -209,14 +206,14 @@ void SpotifyTool::Sync_spotify() {
 		{"Content-Type", "application/json"}
 	};
 
-	HttpWrapper::SendCurlRequest(req_playing, [this](int access_token, std::string result_playing)
+	HttpWrapper::SendCurlRequest(req_playing, [this](int response_code, std::string result_playing)
 		{
 
 			currently_playing = result_playing;
 			WriteInFile("song_request.json", currently_playing);
-			LOG("Body_Result{}", auth_bearer);
-			LOG("Body_Result{}", result_playing);
-			if (currently_playing != "[json.exception.type_error.302] type must be string, but is null") {
+			LOG("Request_result\n{}", response_code);
+			LOG("Body_Result\n{}", result_playing);
+			if (response_code == 200) {
 				json playing_json = json::parse(currently_playing);
 				song = playing_json["item"]["name"];
 				LOG("Song{}", song);
@@ -230,6 +227,31 @@ void SpotifyTool::Sync_spotify() {
 		});
 	
 }
+
+void SpotifyTool::Refresh_token() {
+	refresh_token = LoadofFile("refresh_token.txt");
+	CurlRequest req_refresh;
+	req_refresh.url = "https://accounts.spotify.com/api/token";
+	req_refresh.verb = "POST";
+	req_refresh.headers = {
+
+		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+		{"Content-Type", "application/x-www-form-urlencoded"}
+	};
+	req_refresh.body = "grant_type=refresh_token&refresh_token=" + refresh_token;
+	HttpWrapper::SendCurlRequest(req_refresh, [this](int response_code, std::string result)
+		{
+			if (response_code == 200) {
+				token = result;
+				json token_complete = json::parse(token.begin(), token.end());
+				access_token = token_complete["access_token"];
+				WriteInFile("access_token.txt", access_token);
+			}
+		});
+}
+
+
+
 void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 {
 	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
@@ -238,10 +260,8 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
 {
-	return "SpotifyTool early beta";
+	return "SpotifyTool early alpha";
 }
-
-bool inDragMode = false;
 
 void SpotifyTool::RenderSettings() {
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
@@ -363,39 +383,4 @@ void SpotifyTool::OnClose()
 {
 	isWindowOpen_ = false;
 }
-*/
-/*
-void SpotifyTool::SpotifyRequest(std::string method, std::string endpoint, std::string body, std::function<void(int status, std::string data)> cb) {
-	CurlRequest req;
-	req.url = "https://api.spotify.com/v1" + endpoint;
-	req.verb = method;
-	req.body = body;
-	req.headers = {
-		{"Content-Type", "application/json"},
-		{"Content-Length", std::to_string(body.length())},
-		{"Authorization", accessToken}
-	};
-
-	try {
-		HttpWrapper::SendCurlRequest(req, [this, method, endpoint, body, cb](int code, std::string res) {
-			if (res == "") return cb(code, res);
-
-			json stuff = json::parse(res);
-			if (code == 401 && stuff["error"]["message"] == "The access token expired") {
-				this->GetAccessToken();
-				this->SpotifyRequest(method, endpoint, body, cb);
-			}
-			else {
-				cb(code, res);
-			}
-			});
-	}
-	catch (...) {
-		this->Log("CRASH IN WEB THREAD OR SOMETHING");
-	}
-}
-
-this->SpotifyRequest("https://api.spotify.com/v1", "/me/player/pause", "", [this](int code, string res) {
-	this->Log(res);
-	});
 */
