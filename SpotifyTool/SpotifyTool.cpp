@@ -5,13 +5,12 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <string>
-
+#include "bakkesmod/wrappers/GuiManagerWrapper.h"
 /*
 
 TO DO LIST:
 
  Fix CURL (DONE)
- Fix Copy/Paste user input
  Parse access token (DONE)
  Parse refresh token (DONE)
  Get song (DONE)
@@ -35,6 +34,7 @@ shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
+
 	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10, true);
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
@@ -91,6 +91,24 @@ string SpotifyTool::LoadofFile(std::string _filename)
 	return value;
 }
 
+void SpotifyTool::SetImGuiContext(uintptr_t ctx)
+{
+	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
+	auto gui = gameWrapper->GetGUIManager();
+
+	// Font is customisable by adding a new one and/or changing name of another
+	auto [res, font] = gui.LoadFont("font.tff 40px", "font.ttf", 40);
+
+	if (res == 0) {
+		LOG("Failed to load the font!");
+	}
+	else if (res == 1) {
+		LOG("The font will be loaded");
+	}
+	else if (res == 2 && font) {
+		myFont = font;
+	}
+}
 
 void SpotifyTool::onUnload() {
 	
@@ -100,7 +118,7 @@ void SpotifyTool::onUnload() {
 
 void SpotifyTool::Render(CanvasWrapper canvas) {
 	
-	float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
+	/*float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
 	if (!stool_scale) { return; }
 	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
 	if (!textColorVar) {
@@ -121,6 +139,12 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 	bool enabled = enableCvar.getBoolValue();
 
 	if (enabled) {
+		// First ensure the font is actually loaded
+		if (!myFont) {
+			auto gui = gameWrapper->GetGUIManager();
+			myFont = gui.GetFont("font.tff 40px");
+		}
+
 		canvas.SetPosition(Vector2{ int(xLoc), int(yLoc) });
 		// Draw box here
 		Vector2 drawLoc = {
@@ -137,7 +161,9 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 		time2 += ImGui::GetIO().DeltaTime;
 		if (time > 30)
 		{
+			
 			Sync_spotify();
+			
 			time = 0;
 		}
 		if (time2 > 3500)
@@ -146,13 +172,41 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 			Refresh_token();
 			time2 = 0;
 		}
-		song = LoadofFile("song.txt");
-		canvas.DrawString(song, stool_scale, stool_scale);
+		if (myFont) {
+			ImGui::PushFont(myFont);
+			song = LoadofFile("song.txt");
+			canvas.DrawString(song, stool_scale, stool_scale);
+			ImGui::PopFont();
+		}
+		else {
+			ImGui::Text("The custom font haven't been loaded yet");
+		}
 	}
 	else
 	{
 		return;
+	}*/
+	if (!myFont) {
+		auto gui = gameWrapper->GetGUIManager();
+		myFont = gui.GetFont("testfont3");
 	}
+
+	if (myFont) {
+		ImGui::PushFont(myFont);
+		ImGui::Text("This is using a custom font");
+	}
+	else
+	{
+		ImGui::Text("The custom font haven't been loaded yet");
+	}
+
+
+
+	if (myFont) {
+		ImGui::PopFont();
+	}
+
+	ImGui::End();
 }
 
 
@@ -190,6 +244,11 @@ void SpotifyTool::Setup_spotify() {
 		setup_status = "true";
 		WriteInFile("setup_status.txt", setup_status);
 	}
+}
+
+string SpotifyTool::GetMenuTitle()
+{
+	return menuTitle_;
 }
 
 void SpotifyTool::Sync_spotify() {
@@ -251,16 +310,10 @@ void SpotifyTool::Refresh_token() {
 }
 
 
-
-void SpotifyTool::SetImGuiContext(uintptr_t ctx)
-{
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
-}
-
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
 {
-	return "SpotifyTool early alpha";
+	return "SpotifyTool early beta";
 }
 
 void SpotifyTool::RenderSettings() {
@@ -357,11 +410,6 @@ std::string SpotifyTool::GetMenuName()
 std::string SpotifyTool::GetMenuTitle()
 {
 	return menuTitle_;
-}
-// Don't call this yourself, BM will call this function with a pointer to the current ImGui context
-void SpotifyTool::SetImGuiContext(uintptr_t ctx)
-{
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
 }
 // Should events such as mouse clicks/key inputs be blocked so they won't reach the game
 bool SpotifyTool::ShouldBlockInput()

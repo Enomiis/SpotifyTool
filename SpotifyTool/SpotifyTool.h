@@ -25,6 +25,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool song_sync = true;
         bool inDragMode = false;
         float time, time2;
+        ImFont* myFont;
 
     private:
         virtual void onLoad();
@@ -39,5 +40,6 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
+        std::string GetMenuTitle();
         std::shared_ptr<ImageWrapper> background_v1;
     };
