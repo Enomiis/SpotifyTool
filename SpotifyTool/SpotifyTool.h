@@ -25,7 +25,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool song_sync = true;
         bool inDragMode = false;
         float time, time2;
-        ImFont* myFont;
+        ImFont* myFont = nullptr;
 
     private:
         virtual void onLoad();
@@ -36,7 +36,6 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         void WriteInFile(std::string _filename, std::string _value);
         std::string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
-        void Render(CanvasWrapper canvas);
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
