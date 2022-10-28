@@ -5,7 +5,6 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "version.h"
 #include <fstream>
-#include <iostream>
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
@@ -13,15 +12,15 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginSettingsWindow
     {
     private:
-        string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
-        string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
+        std::string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
+        std::string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
         bool stoolEnabled = true;
         bool moveOverlay = false;
-        string setup_status;
-        string song;
-        ifstream file, song_json;
-        string response;
-        string currently_playing;
+        std::string setup_status;
+        std::string song;
+        std::ifstream file, song_json;
+        std::string response;
+        std::string currently_playing;
         float timer,timer_reset;
         bool song_sync = true;
         bool inDragMode = false;
@@ -31,15 +30,15 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     private:
         virtual void onLoad();
         virtual void onUnload();
-        string GetPluginName();
+        std::string GetPluginName();
         void SetImGuiContext(uintptr_t ctx) override;
         void WriteInFile(std::string _filename, std::string _value);
-        string LoadofFile(std::string _filename);
+        std::string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
         void RenderSettings() override;
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
-        string GetMenuTitle();
+        std::string GetMenuTitle();
         bool IsActiveOverlay();
     };

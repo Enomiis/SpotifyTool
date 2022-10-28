@@ -309,6 +309,27 @@ void SpotifyTool::RenderSettings() {
 		ImGui::PopFont();
 	}
 }
+
+void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
+	ImGui::Checkbox("Drag Mode", &inDragMode);
+
+	if (inDragMode) {
+		if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered()) {
+			// doesn't do anything if any ImGui is hovered over
+			return;
+		}
+		// drag cursor w/ arrows to N, E, S, W
+		ImGui::SetMouseCursor(2);
+		if (ImGui::IsMouseDown(0)) {
+			// if holding left click, move
+			// sets location to current mouse position
+			ImVec2 mousePos = ImGui::GetMousePos();
+			xLocCvar.setValue(mousePos.x);
+			yLocCvar.setValue(mousePos.y);
+		}
+	}
+}
+
 bool SpotifyTool::IsActiveOverlay() {
 	return false;
 }
