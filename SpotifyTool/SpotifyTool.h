@@ -11,34 +11,35 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginSettingsWindow
-{
-private:
-    std::string code, refresh_token, access_token, token, picture, artist, song_artist, auth_bearer, auth, playing, formated_playing;
-    std::string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
-    bool stoolEnabled = true;
-    std::string setup_status;
-    std::string song;
-    std::ifstream file, song_json;
-    std::string response;
-    std::string currently_playing;
-    float timer, timer_reset;
-    bool song_sync = true;
-    bool inDragMode = false;
-    float time, time2;
-    ImFont* myFont = nullptr;
+    {
+    private:
+        std::string code, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
+        std::string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
+        bool stoolEnabled = true;
+        std::string setup_status;
+        std::string song;
+        std::ifstream file, song_json;
+        std::string response;
+        std::string currently_playing;
+        float timer,timer_reset;
+        bool song_sync = true;
+        bool inDragMode = false;
+        float time, time2;
+        ImFont* myFont;
 
-private:
-    virtual void onLoad();
-    virtual void onUnload();
-    void RenderSettings() override;
-    std::string GetPluginName() override;
-    void SetImGuiContext(uintptr_t ctx) override;
-    void WriteInFile(std::string _filename, std::string _value);
-    std::string LoadofFile(std::string _filename);
-    void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
-    void Sync_spotify();
-    void Setup_spotify();
-    void Refresh_token();
-    std::string GetMenuTitle();
-    std::shared_ptr<ImageWrapper> background_v1;
-};
+    private:
+        virtual void onLoad();
+        virtual void onUnload();
+        void RenderSettings() override;
+        std::string GetPluginName() override;
+        void SetImGuiContext(uintptr_t ctx) override;
+        void WriteInFile(std::string _filename, std::string _value);
+        std::string LoadofFile(std::string _filename);
+        void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
+        void Render(CanvasWrapper canvas);
+        void Sync_spotify();
+        void Setup_spotify();
+        void Refresh_token();
+        std::string GetMenuTitle();
+        std::shared_ptr<ImageWrapper> background_v1;
+    };
