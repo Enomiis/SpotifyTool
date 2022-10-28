@@ -13,14 +13,15 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginSettingsWindow
     {
     private:
-        std::string code, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
-        std::string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
+        string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
+        string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
         bool stoolEnabled = true;
-        std::string setup_status;
-        std::string song;
-        std::ifstream file, song_json;
-        std::string response;
-        std::string currently_playing;
+        bool moveOverlay = false;
+        string setup_status;
+        string song;
+        ifstream file, song_json;
+        string response;
+        string currently_playing;
         float timer,timer_reset;
         bool song_sync = true;
         bool inDragMode = false;
@@ -30,16 +31,15 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     private:
         virtual void onLoad();
         virtual void onUnload();
-        void RenderSettings() override;
-        std::string GetPluginName() override;
+        string GetPluginName();
         void SetImGuiContext(uintptr_t ctx) override;
         void WriteInFile(std::string _filename, std::string _value);
-        std::string LoadofFile(std::string _filename);
+        string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
-        void Render(CanvasWrapper canvas);
+        void RenderSettings() override;
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
-        std::string GetMenuTitle();
-        std::shared_ptr<ImageWrapper> background_v1;
+        string GetMenuTitle();
+        bool IsActiveOverlay();
     };

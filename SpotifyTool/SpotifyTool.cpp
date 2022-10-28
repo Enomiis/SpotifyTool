@@ -109,8 +109,8 @@ void SpotifyTool::onUnload() {
 
 #pragma region Spotify
 void SpotifyTool::Setup_spotify() {
-	code = LoadofFile("code.txt");
-	LOG("Body_result{}", code);
+	code_spotify = LoadofFile("code.txt");
+	LOG("Body_result{}", code_spotify);
 	setup_status = LoadofFile("setup_status.txt");
 	if (setup_status == "false") {
 		CurlRequest req;
@@ -121,12 +121,12 @@ void SpotifyTool::Setup_spotify() {
 			{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
 			{"Content-Type", "application/x-www-form-urlencoded"}
 		};
-		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code;
+		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code_spotify;
 
 		LOG("sending body request");
-		HttpWrapper::SendCurlRequest(req, [this](int code, std::string result)
+		HttpWrapper::SendCurlRequest(req, [this](int response_code, std::string result)
 			{
-				if (code == 200) {
+				if (response_code == 200) {
 					token = result;
 					WriteInFile("return.txt", token);
 					json token_complete = json::parse(token.begin(), token.end());
@@ -206,24 +206,18 @@ std::string SpotifyTool::GetPluginName()
 	return "SpotifyTool early beta";
 }
 
-void SpotifyTool::RenderSettings()
-{
 
-	if (!myFont) {
-		auto gui = gameWrapper->GetGUIManager();
-		myFont = gui.GetFont("SpotifyToolFont");
-	}
 
-	if (myFont) {
-		ImGui::PushFont(myFont);
-		ImGui::TextUnformatted("Using custom font");
-	}
 
+#pragma region Rendering
+void SpotifyTool::RenderSettings() {
+
+	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs;
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
 	}
-
+	ImGui::Checkbox("Drag Mode", &moveOverlay);
 
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Sync your activity");
@@ -276,73 +270,19 @@ void SpotifyTool::RenderSettings()
 	/*static char command[128];
 	ImGui::InputText("Input callback", command, IM_ARRAYSIZE(command));
 	*/
-	if (myFont) {
-		ImGui::PopFont();
+	if (!moveOverlay) {
+		WindowFlags |= ImGuiWindowFlags_NoInputs;
 	}
-}
-
-void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
-	ImGui::Checkbox("Drag Mode", &inDragMode);
-
-	if (inDragMode) {
-		if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered()) {
-			// doesn't do anything if any ImGui is hovered over
-			return;
-		}
-		// drag cursor w/ arrows to N, E, S, W
-		ImGui::SetMouseCursor(2);
-		if (ImGui::IsMouseDown(0)) {
-			// if holding left click, move
-			// sets location to current mouse position
-			ImVec2 mousePos = ImGui::GetMousePos();
-			xLocCvar.setValue(mousePos.x);
-			yLocCvar.setValue(mousePos.y);
-		}
-	}
-}
-
-void SpotifyTool::Render(CanvasWrapper canvas) {
-
-	if (!myFont) {
-		auto gui = gameWrapper->GetGUIManager();
-		myFont = gui.GetFont("SpotifyToolFont");
-	}
-	float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
-	if (!stool_scale) { return; }
-	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
-	if (!textColorVar) {
-		return;
-	}
-	LinearColor textColor = textColorVar.getColorValue();
-	canvas.SetColor(textColor);
-
-	CVarWrapper xLocCvar = cvarManager->getCvar("stool_x_location");
-	if (!xLocCvar) { return; }
-	float xLoc = xLocCvar.getFloatValue();
-	CVarWrapper yLocCvar = cvarManager->getCvar("stool_y_location");
-	if (!yLocCvar) { return; }
-	float yLoc = yLocCvar.getFloatValue();
-	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
-	bool enabled = enableCvar.getBoolValue();
 	if (enabled) {
 		// First ensure the font is actually loaded
-		canvas.SetPosition(Vector2{ int(xLoc), int(yLoc) });
-		// Draw box here
-		Vector2 drawLoc = {
-			int(xLoc) * stool_scale,
-			int(yLoc) * stool_scale };
-		// Draw text
-		Vector2 textPos = { float(drawLoc.X + 25), float(drawLoc.Y + 5) };
-		// Set the position
-		canvas.SetPosition(textPos);
-		canvas.SetColor(textColor);
+		
 		time += ImGui::GetIO().DeltaTime;
 		time2 += ImGui::GetIO().DeltaTime;
 		if (time > 30)
 		{
 			Sync_spotify();
 		}
-		if (time > 32) 
+		if (time > 32)
 		{
 			time = 0;
 			song = LoadofFile("song.txt");
@@ -353,17 +293,25 @@ void SpotifyTool::Render(CanvasWrapper canvas) {
 			time2 = 0;
 		}
 		ImGui::PushFont(myFont);
-		canvas.DrawString(song, stool_scale, stool_scale);
-		cvarManager->log("a");
+		if (!ImGui::Begin( "",NULL,WindowFlags))
+		{
+			ImGui::Text(song.c_str());
+			ImGui::End();
+			return;
+		}
 	}
 	else
 	{
 		return;
 	}
+
+	if (myFont) {
+		ImGui::PopFont();
+	}
 }
-
-
-
+bool SpotifyTool::IsActiveOverlay() {
+	return false;
+}
 // Do ImGui rendering here
 /*
 // Name of the menu that is used to toggle the window.
