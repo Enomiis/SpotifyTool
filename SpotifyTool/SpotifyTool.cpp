@@ -88,7 +88,7 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 	auto gui = gameWrapper->GetGUIManager();
 
 	// Font is customisable by adding a new one and/or changing name of another
-	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 40);
+	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 10);
 
 	if (res == 0) {
 		cvarManager->log("Failed to load the font!");
@@ -136,16 +136,10 @@ void SpotifyTool::Setup_spotify() {
 					WriteInFile("refresh_token.txt", refresh_token);
 
 				}
-				LOG("Body result:\n{}", result);
 			});
 		setup_status = "true";
 		WriteInFile("setup_status.txt", setup_status);
 	}
-}
-
-string SpotifyTool::GetMenuTitle()
-{
-	return "ass";  //menuTitle_; doesn't compile for me
 }
 
 void SpotifyTool::Sync_spotify() {
@@ -168,7 +162,6 @@ void SpotifyTool::Sync_spotify() {
 			currently_playing = result_playing;
 			WriteInFile("song_request.json", currently_playing);
 			LOG("Request_result\n{}", response_code);
-			LOG("Body_Result\n{}", result_playing);
 			if (response_code == 200) {
 				json playing_json = json::parse(currently_playing);
 				song = playing_json["item"]["name"];
@@ -308,6 +301,66 @@ void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
 	}
 }
 
+void SpotifyTool::Render(CanvasWrapper canvas) {
+
+	if (!myFont) {
+		auto gui = gameWrapper->GetGUIManager();
+		myFont = gui.GetFont("SpotifyToolFont");
+	}
+	float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
+	if (!stool_scale) { return; }
+	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
+	if (!textColorVar) {
+		return;
+	}
+	LinearColor textColor = textColorVar.getColorValue();
+	canvas.SetColor(textColor);
+
+	CVarWrapper xLocCvar = cvarManager->getCvar("stool_x_location");
+	if (!xLocCvar) { return; }
+	float xLoc = xLocCvar.getFloatValue();
+	CVarWrapper yLocCvar = cvarManager->getCvar("stool_y_location");
+	if (!yLocCvar) { return; }
+	float yLoc = yLocCvar.getFloatValue();
+	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
+	bool enabled = enableCvar.getBoolValue();
+	if (enabled) {
+		// First ensure the font is actually loaded
+		canvas.SetPosition(Vector2{ int(xLoc), int(yLoc) });
+		// Draw box here
+		Vector2 drawLoc = {
+			int(xLoc) * stool_scale,
+			int(yLoc) * stool_scale };
+		// Draw text
+		Vector2 textPos = { float(drawLoc.X + 25), float(drawLoc.Y + 5) };
+		// Set the position
+		canvas.SetPosition(textPos);
+		canvas.SetColor(textColor);
+		time += ImGui::GetIO().DeltaTime;
+		time2 += ImGui::GetIO().DeltaTime;
+		if (time > 30)
+		{
+			Sync_spotify();
+		}
+		if (time > 32) 
+		{
+			time = 0;
+			song = LoadofFile("song.txt");
+		}
+		if (time2 > 3500)
+		{
+			Refresh_token();
+			time2 = 0;
+		}
+		ImGui::PushFont(myFont);
+		canvas.DrawString(song, stool_scale, stool_scale);
+		cvarManager->log("a");
+	}
+	else
+	{
+		return;
+	}
+}
 
 
 
