@@ -3,13 +3,11 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <nlohmann/json.hpp>
+#include "nlohmann/json.hpp"
 #include <string>
 #include "bakkesmod/wrappers/GuiManagerWrapper.h"
 /*
-
 TO DO LIST:
-
  Fix CURL (DONE)
  Parse access token (DONE)
  Parse refresh token (DONE)
@@ -18,10 +16,7 @@ TO DO LIST:
  Picture in options
  Skip/Pause
  Keybinds
-
-
  LEARN TO FCKG CODE IN C++
-
 */
 
 BAKKESMOD_PLUGIN(SpotifyTool, "Spotify Tool Plugin", "0.1.0.0", PERMISSION_ALL)
@@ -39,9 +34,6 @@ void SpotifyTool::onLoad()
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
 		}, "", PERMISSION_ALL);
-	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
-		Render(canvas);
-		});
 	Setup_spotify();
 	Refresh_token();
 	Sync_spotify();
@@ -55,7 +47,6 @@ void SpotifyTool::onLoad()
 			});
 
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
-	gameWrapper->RegisterDrawable(std::bind(&SpotifyTool::Render, this, std::placeholders::_1));
 
 	cvarManager->registerCvar("stool_x_location", "0", "set x location of the overlay");
 	cvarManager->registerCvar("stool_y_location", "0", "set y location of the overlay");
@@ -97,13 +88,13 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 	auto gui = gameWrapper->GetGUIManager();
 
 	// Font is customisable by adding a new one and/or changing name of another
-	auto [res, font] = gui.LoadFont("font.tff 40px", "font.ttf", 40);
+	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 40);
 
 	if (res == 0) {
-		LOG("Failed to load the font!");
+		cvarManager->log("Failed to load the font!");
 	}
 	else if (res == 1) {
-		LOG("The font will be loaded");
+		cvarManager->log("The font will be loaded");
 	}
 	else if (res == 2 && font) {
 		myFont = font;
@@ -111,104 +102,10 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 }
 
 void SpotifyTool::onUnload() {
-	
+
 	WriteInFile("song.txt", "No Spotify Activity");
 
 }
-
-void SpotifyTool::Render(CanvasWrapper canvas) {
-	
-	/*float stool_scale = cvarManager->getCvar("stool_scale").getFloatValue();
-	if (!stool_scale) { return; }
-	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
-	if (!textColorVar) {
-		return;
-	}
-
-	LinearColor textColor = textColorVar.getColorValue();
-	canvas.SetColor(textColor);
-	
-	CVarWrapper xLocCvar = cvarManager->getCvar("stool_x_location");
-	if (!xLocCvar) { return; }
-	float xLoc = xLocCvar.getFloatValue();
-
-	CVarWrapper yLocCvar = cvarManager->getCvar("stool_y_location");
-	if (!yLocCvar) { return; }
-	float yLoc = yLocCvar.getFloatValue();
-	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
-	bool enabled = enableCvar.getBoolValue();
-
-	if (enabled) {
-		// First ensure the font is actually loaded
-		if (!myFont) {
-			auto gui = gameWrapper->GetGUIManager();
-			myFont = gui.GetFont("font.tff 40px");
-		}
-
-		canvas.SetPosition(Vector2{ int(xLoc), int(yLoc) });
-		// Draw box here
-		Vector2 drawLoc = {
-			int(xLoc) * stool_scale,
-			int(yLoc) * stool_scale };
-		// Draw text
-		Vector2 textPos = { float(drawLoc.X + 25), float(drawLoc.Y + 5) };
-
-		// Set the position
-		canvas.SetPosition(textPos);
-		canvas.SetColor(textColor);
-
-		time += ImGui::GetIO().DeltaTime;
-		time2 += ImGui::GetIO().DeltaTime;
-		if (time > 30)
-		{
-			
-			Sync_spotify();
-			
-			time = 0;
-		}
-		if (time2 > 3500)
-		{
-			
-			Refresh_token();
-			time2 = 0;
-		}
-		if (myFont) {
-			ImGui::PushFont(myFont);
-			song = LoadofFile("song.txt");
-			canvas.DrawString(song, stool_scale, stool_scale);
-			ImGui::PopFont();
-		}
-		else {
-			ImGui::Text("The custom font haven't been loaded yet");
-		}
-	}
-	else
-	{
-		return;
-	}*/
-	if (!myFont) {
-		auto gui = gameWrapper->GetGUIManager();
-		myFont = gui.GetFont("testfont3");
-	}
-
-	if (myFont) {
-		ImGui::PushFont(myFont);
-		ImGui::Text("This is using a custom font");
-	}
-	else
-	{
-		ImGui::Text("The custom font haven't been loaded yet");
-	}
-
-
-
-	if (myFont) {
-		ImGui::PopFont();
-	}
-
-	ImGui::End();
-}
-
 
 #pragma region Spotify
 void SpotifyTool::Setup_spotify() {
@@ -248,11 +145,11 @@ void SpotifyTool::Setup_spotify() {
 
 string SpotifyTool::GetMenuTitle()
 {
-	return menuTitle_;
+	return "ass";  //menuTitle_; doesn't compile for me
 }
 
 void SpotifyTool::Sync_spotify() {
-	
+
 	access_token = LoadofFile("access_token.txt");
 	auth = "Bearer ";
 	auth_bearer = auth + access_token;
@@ -284,7 +181,7 @@ void SpotifyTool::Sync_spotify() {
 				WriteInFile("song.txt", song_artist);
 			}
 		});
-	
+
 }
 
 void SpotifyTool::Refresh_token() {
@@ -316,13 +213,25 @@ std::string SpotifyTool::GetPluginName()
 	return "SpotifyTool early beta";
 }
 
-void SpotifyTool::RenderSettings() {
+void SpotifyTool::RenderSettings()
+{
+
+	if (!myFont) {
+		auto gui = gameWrapper->GetGUIManager();
+		myFont = gui.GetFont("SpotifyToolFont");
+	}
+
+	if (myFont) {
+		ImGui::PushFont(myFont);
+		ImGui::TextUnformatted("Using custom font");
+	}
+
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
 	}
-	
-	
+
+
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Sync your activity");
 	}
@@ -356,14 +265,14 @@ void SpotifyTool::RenderSettings() {
 		yLocCvar.setValue(yLoc);
 	}
 	DragWidget(xLocCvar, yLocCvar);
-	
+
 	CVarWrapper stool_scale = cvarManager->getCvar("stool_scale");
 	if (!stool_scale) { return; }
 	float scale = stool_scale.getFloatValue();
 	if (ImGui::SliderFloat("Scale", &scale, 0.01, 10.0)) {
 		stool_scale.setValue(scale);
 	}
-	
+
 	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
 	if (!textColorVar) { return; }
 	// converts from 0-255 color to 0.0-1.0 color
@@ -374,6 +283,9 @@ void SpotifyTool::RenderSettings() {
 	/*static char command[128];
 	ImGui::InputText("Input callback", command, IM_ARRAYSIZE(command));
 	*/
+	if (myFont) {
+		ImGui::PopFont();
+	}
 }
 
 void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
