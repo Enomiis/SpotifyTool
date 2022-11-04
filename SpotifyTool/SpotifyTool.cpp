@@ -29,7 +29,9 @@ shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
-
+	gameWrapper->SetTimeout([this](GameWrapper* gameWrapper) {
+		cvarManager->executeCommand("togglemenu " + GetMenuName());
+		}, 1);
 	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10, true);
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
@@ -88,7 +90,7 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 	auto gui = gameWrapper->GetGUIManager();
 
 	// Font is customisable by adding a new one and/or changing name of another
-	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 10);
+	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 40);
 
 	if (res == 0) {
 		cvarManager->log("Failed to load the font!");
@@ -207,12 +209,12 @@ std::string SpotifyTool::GetPluginName()
 }
 
 
-
-
 #pragma region Rendering
 void SpotifyTool::RenderSettings() {
-
-	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoInputs;
+	if (myFont) {
+		ImGui::PushFont(myFont);
+	}
+	
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
@@ -267,15 +269,12 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::ColorEdit4("Text Color", &textColor.R)) {
 		textColorVar.setValue(textColor * 255);
 	}
-	/*static char command[128];
-	ImGui::InputText("Input callback", command, IM_ARRAYSIZE(command));
-	*/
-	if (!moveOverlay) {
-		WindowFlags |= ImGuiWindowFlags_NoInputs;
-	}
+	
 	if (enabled) {
 		// First ensure the font is actually loaded
-		
+		if (myFont) {
+			ImGui::PushFont(myFont);
+		}
 		time += ImGui::GetIO().DeltaTime;
 		time2 += ImGui::GetIO().DeltaTime;
 		if (time > 30)
@@ -292,22 +291,50 @@ void SpotifyTool::RenderSettings() {
 			Refresh_token();
 			time2 = 0;
 		}
-		ImGui::PushFont(myFont);
-		if (!ImGui::Begin( "",NULL,WindowFlags))
-		{
-			ImGui::Text(song.c_str());
-			ImGui::End();
-			return;
+		
+		if (myFont) {
+			ImGui::PopFont();
 		}
+		
 	}
+	
 	else
 	{
 		return;
 	}
 
+	
+
 	if (myFont) {
 		ImGui::PopFont();
 	}
+	
+}
+
+void SpotifyTool::Render() {
+	
+	if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+	{
+		// Early out if the window is collapsed, as an optimization.
+		ImGui::End();
+		return;
+	}
+	if (myFont) {
+		ImGui::PushFont(myFont);
+		ImGui::Text("This is using a custom font");
+	}
+	else
+	{
+		ImGui::Text("The custom font haven't been loaded yet");
+	}
+
+
+
+	if (myFont) {
+		ImGui::PopFont();
+	}
+
+	ImGui::End();
 }
 
 void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
@@ -329,21 +356,16 @@ void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
 		}
 	}
 }
-
-bool SpotifyTool::IsActiveOverlay() {
-	return false;
-}
 // Do ImGui rendering here
-/*
+
 // Name of the menu that is used to toggle the window.
-std::string SpotifyTool::GetMenuName()
+string SpotifyTool::GetMenuName()
 {
-	return "SpotifyTool";
+	return "spotifytool";
 }
-// Title to give the menu
-std::string SpotifyTool::GetMenuTitle()
+string SpotifyTool::GetMenuTitle()
 {
-	return menuTitle_;
+	return "Spotify Tool";
 }
 // Should events such as mouse clicks/key inputs be blocked so they won't reach the game
 bool SpotifyTool::ShouldBlockInput()
@@ -365,4 +387,3 @@ void SpotifyTool::OnClose()
 {
 	isWindowOpen_ = false;
 }
-*/

@@ -26,19 +26,30 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool inDragMode = false;
         float time, time2;
         ImFont* myFont;
-
+        bool isWindowOpen_ = false;
+        bool isMinimized_ = false;
+        ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
+            | ImGuiWindowFlags_NoFocusOnAppearing;
+        
     private:
+        
         virtual void onLoad();
         virtual void onUnload();
-        std::string GetPluginName();
         void SetImGuiContext(uintptr_t ctx) override;
         void WriteInFile(std::string _filename, std::string _value);
         std::string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
         void RenderSettings() override;
+        void Render();
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
+        std::string GetPluginName();
+        std::string GetMenuName();
         std::string GetMenuTitle();
+        bool ShouldBlockInput();
         bool IsActiveOverlay();
+        void OnOpen();
+        void OnClose();
+    
     };
