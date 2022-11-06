@@ -171,9 +171,9 @@ void SpotifyTool::Sync_spotify() {
 				WriteInFile("song.txt", "");
 				WriteInFile("song.txt", song);
 				artist = playing_json["item"]["artists"][0]["name"];
+				WriteInFile("artist.txt", "");
+				WriteInFile("artist.txt", artist);
 				/*picture = playing_json["access_token"];*/
-				song_artist = song + " - " + artist;
-				WriteInFile("song.txt", song_artist);
 			}
 		});
 
@@ -253,7 +253,6 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::SliderFloat("Text Y Location", &yLoc, 0.0, 1080)) {
 		yLocCvar.setValue(yLoc);
 	}
-	DragWidget(xLocCvar, yLocCvar);
 
 	CVarWrapper stool_scale = cvarManager->getCvar("stool_scale");
 	if (!stool_scale) { return; }
@@ -261,47 +260,8 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::SliderFloat("Scale", &scale, 0.01, 10.0)) {
 		stool_scale.setValue(scale);
 	}
+	
 
-	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
-	if (!textColorVar) { return; }
-	// converts from 0-255 color to 0.0-1.0 color
-	LinearColor textColor = textColorVar.getColorValue() / 255;
-	if (ImGui::ColorEdit4("Text Color", &textColor.R)) {
-		textColorVar.setValue(textColor * 255);
-	}
-	
-	if (enabled) {
-		// First ensure the font is actually loaded
-		if (myFont) {
-			ImGui::PushFont(myFont);
-		}
-		time += ImGui::GetIO().DeltaTime;
-		time2 += ImGui::GetIO().DeltaTime;
-		if (time > 30)
-		{
-			Sync_spotify();
-		}
-		if (time > 32)
-		{
-			time = 0;
-			song = LoadofFile("song.txt");
-		}
-		if (time2 > 3500)
-		{
-			Refresh_token();
-			time2 = 0;
-		}
-		
-		if (myFont) {
-			ImGui::PopFont();
-		}
-		
-	}
-	
-	else
-	{
-		return;
-	}
 
 	
 
@@ -312,35 +272,71 @@ void SpotifyTool::RenderSettings() {
 }
 
 void SpotifyTool::Render() {
-	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
-		| ImGuiWindowFlags_NoFocusOnAppearing;
+	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 
-	if (!moveOverlay)
-	{
-		WindowFlags |= ImGuiWindowFlags_NoInputs;
-	}
-
-	// uncomment if you don't want a background (flag found by just checking for the other window flags available
-	//WindowFlags |= ImGuiWindowFlags_NoBackground;
-
-
-	if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, WindowFlags))
-	{
-		// Early out if the window is collapsed, as an optimization.
-		ImGui::End();
+	if (!enableCvar) {
 		return;
 	}
-	if (myFont) {
-		ImGui::PushFont(myFont);
-		ImGui::Text("This is using a custom font");
+	bool enabled = enableCvar.getBoolValue();
+	if (enabled) {
+		ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
+			| ImGuiWindowFlags_NoFocusOnAppearing;
+
+		if (!moveOverlay)
+		{
+			WindowFlags |= ImGuiWindowFlags_NoInputs;
+		}
+
+		// uncomment if you don't want a background (flag found by just checking for the other window flags available
+		//WindowFlags |= ImGuiWindowFlags_NoBackground;
+
+
+		if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, WindowFlags))
+		{
+			// Early out if the window is collapsed, as an optimization.
+			ImGui::End();
+			return;
+		}
+		if (myFont) {
+			ImGui::PushFont(myFont);
+			ImGui::Text("%s",song.c_str());
+			ImGui::Text("%s", artist.c_str());
+		}
+		else
+		{
+			ImGui::Text("The custom font haven't been loaded yet");
+		}
+	
+
+	
+		// First ensure the font is actually loaded
+		if (myFont) {
+			ImGui::PushFont(myFont);
+		}
+		time += ImGui::GetIO().DeltaTime;
+		time2 += ImGui::GetIO().DeltaTime;
+		if (time > 30)
+		{
+			Sync_spotify();
+			song = LoadofFile("song.txt");
+			time = 0;
+		}
+		if (time2 > 3500)
+		{
+			Refresh_token();
+			time2 = 0;
+		}
+
+		if (myFont) {
+			ImGui::PopFont();
+		}
+
 	}
+
 	else
 	{
-		ImGui::Text("The custom font haven't been loaded yet");
+		return;
 	}
-
-
-
 	if (myFont) {
 		ImGui::PopFont();
 	}
@@ -372,7 +368,7 @@ void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
 // Name of the menu that is used to toggle the window.
 string SpotifyTool::GetMenuName()
 {
-	return "spotifytool";
+	return "SpotifyTool";
 }
 string SpotifyTool::GetMenuTitle()
 {
@@ -398,3 +394,15 @@ void SpotifyTool::OnClose()
 {
 	isWindowOpen_ = false;
 }
+
+
+// Changing color is work in progress
+/*
+	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
+	if (!textColorVar) { return; }
+	// converts from 0-255 color to 0.0-1.0 color
+	LinearColor textColor = textColorVar.getColorValue() / 255;
+	if (ImGui::ColorEdit4("Text Color", &textColor.R)) {
+		textColorVar.setValue(textColor * 255);
+	}
+*/
