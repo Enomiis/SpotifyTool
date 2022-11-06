@@ -312,8 +312,19 @@ void SpotifyTool::RenderSettings() {
 }
 
 void SpotifyTool::Render() {
-	
-	if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+	ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
+		| ImGuiWindowFlags_NoFocusOnAppearing;
+
+	if (!moveOverlay)
+	{
+		WindowFlags |= ImGuiWindowFlags_NoInputs;
+	}
+
+	// uncomment if you don't want a background (flag found by just checking for the other window flags available
+	//WindowFlags |= ImGuiWindowFlags_NoBackground;
+
+
+	if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, WindowFlags))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
@@ -375,7 +386,7 @@ bool SpotifyTool::ShouldBlockInput()
 // Return true if window should be interactive
 bool SpotifyTool::IsActiveOverlay()
 {
-	return true;
+	return false;
 }
 // Called when window is opened
 void SpotifyTool::OnOpen()

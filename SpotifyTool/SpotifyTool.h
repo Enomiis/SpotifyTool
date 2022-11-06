@@ -9,7 +9,8 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
-    public BakkesMod::Plugin::PluginSettingsWindow
+    public BakkesMod::Plugin::PluginSettingsWindow,
+    public BakkesMod::Plugin::PluginWindow
     {
     private:
         std::string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
@@ -40,7 +41,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         std::string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
         void RenderSettings() override;
-        void Render();
+        void Render() override;
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
