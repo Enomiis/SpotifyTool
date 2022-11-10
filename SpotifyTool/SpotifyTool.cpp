@@ -39,7 +39,6 @@ void SpotifyTool::onLoad()
 	Setup_spotify();
 	Refresh_token();
 	Sync_spotify();
-	cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 
 	cvarManager->log("working bro");
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetDataFolder() / "spotifytool_logo.png");
@@ -152,13 +151,13 @@ void SpotifyTool::Sync_spotify() {
 				WriteInFile("artist.txt", artist);
 				picture = playing_json["item"]["album"]["images"][0]["url"];
 				WriteInFile("picture.txt", picture);
-				/*duration = playing_json["item"]["duration_ms"];
-				WriteInFile("duration.txt", duration);
+				duration = playing_json["item"]["duration_ms"];
+				WriteInFile("duration.txt", std::to_string(duration));
 				progress = playing_json["progress_ms"];
-				WriteInFile("progress.txt", progress);*/
+				WriteInFile("progress.txt", std::to_string(progress));
 			}
 		});
-
+	cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 }
 
 void SpotifyTool::Refresh_token() {
@@ -312,7 +311,7 @@ void SpotifyTool::Render() {
 		if (doOnce) {
 			duration_ms = std::stoi(LoadofFile("duration.txt"));
 			progress_ms = std::stoi(LoadofFile("progress.txt"));
-			song_duration = (duration_ms - progress_ms) / 1000;
+			song_duration = ((duration_ms - progress_ms) / 1000) + 4;
 			doOnce = false;
 		}
 		counter += ImGui::GetIO().DeltaTime;
@@ -324,13 +323,29 @@ void SpotifyTool::Render() {
 			cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 			counter = 0;
 			doOnce = true;
+			if (cover)
+			{
+				if (auto* ptr = cover->GetImguiPtr())
+				{
+					ImGui::Image(ptr, { 64, 64 });
+				}
+				else
+				{
+					if (myFont) {
+						ImGui::PushFont(myFont);
+					}
+					ImGui::Text("Loading");
+					if (myFont) {
+						ImGui::PopFont();
+					}
+				}
+			}
 		}
 		if (token_denied > 3500)
 		{
 			Refresh_token();
 			token_denied = 0;
 		}
-
 		
 		if (cover)
 		{
@@ -343,6 +358,8 @@ void SpotifyTool::Render() {
 				ImGui::Text("Loading");
 			}
 		}
+		
+		
 		if (myFont) {
 			ImGui::PopFont();
 		}
