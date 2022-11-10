@@ -39,6 +39,7 @@ void SpotifyTool::onLoad()
 	Setup_spotify();
 	Refresh_token();
 	Sync_spotify();
+	cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 
 	cvarManager->log("working bro");
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetDataFolder() / "spotifytool_logo.png");
@@ -49,12 +50,9 @@ void SpotifyTool::onLoad()
 			});
 
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
-
-	cvarManager->registerCvar("stool_x_location", "0", "set x location of the overlay");
-	cvarManager->registerCvar("stool_y_location", "0", "set y location of the overlay");
 }
 
-#pragma region File I / O
+#pragma region Data manipulation
 void SpotifyTool::WriteInFile(std::string _filename, std::string _value)
 {
 	std::ofstream stream(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + _filename, std::ios::out | std::ios::trunc);
@@ -82,25 +80,6 @@ string SpotifyTool::LoadofFile(std::string _filename)
 		cout << value;
 	}
 	return value;
-}
-
-void SpotifyTool::SetImGuiContext(uintptr_t ctx)
-{
-	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
-	auto gui = gameWrapper->GetGUIManager();
-
-	// Font is customisable by adding a new one and/or changing name of another
-	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 40);
-
-	if (res == 0) {
-		cvarManager->log("Failed to load the font!");
-	}
-	else if (res == 1) {
-		cvarManager->log("The font will be loaded");
-	}
-	else if (res == 2 && font) {
-		myFont = font;
-	}
 }
 
 void SpotifyTool::onUnload() {
@@ -173,7 +152,8 @@ void SpotifyTool::Sync_spotify() {
 				artist = playing_json["item"]["artists"][0]["name"];
 				WriteInFile("artist.txt", "");
 				WriteInFile("artist.txt", artist);
-				/*picture = playing_json["access_token"];*/
+				picture = playing_json["item"]["album"]["images"][1]["url"];
+				WriteInFile("picture.txt", picture);
 			}
 		});
 
@@ -218,6 +198,7 @@ void SpotifyTool::RenderSettings() {
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
+		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 	}
 	ImGui::Checkbox("Drag Mode", &moveOverlay);
 
@@ -261,14 +242,29 @@ void SpotifyTool::RenderSettings() {
 		stool_scale.setValue(scale);
 	}
 	
-
-
-	
-
 	if (myFont) {
 		ImGui::PopFont();
 	}
 	
+}
+
+void SpotifyTool::SetImGuiContext(uintptr_t ctx)
+{
+	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(ctx));
+	auto gui = gameWrapper->GetGUIManager();
+
+	// Font is customisable by adding a new one and/or changing name of another
+	auto [res, font] = gui.LoadFont("SpotifyToolFont", "font.ttf", 40);
+
+	if (res == 0) {
+		cvarManager->log("Failed to load the font!");
+	}
+	else if (res == 1) {
+		cvarManager->log("The font will be loaded");
+	}
+	else if (res == 2 && font) {
+		myFont = font;
+	}
 }
 
 void SpotifyTool::Render() {
@@ -319,6 +315,7 @@ void SpotifyTool::Render() {
 		{
 			Sync_spotify();
 			song = LoadofFile("song.txt");
+			cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 			time = 0;
 		}
 		if (time2 > 3500)
@@ -327,10 +324,21 @@ void SpotifyTool::Render() {
 			time2 = 0;
 		}
 
+		
+		if (cover)
+		{
+			if (auto* ptr = cover->GetImguiPtr())
+			{
+				ImGui::Image(ptr, { 256, 256 });
+			}
+			else
+			{
+				ImGui::Text("Loading");
+			}
+		}
 		if (myFont) {
 			ImGui::PopFont();
 		}
-
 	}
 
 	else

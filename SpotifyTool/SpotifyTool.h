@@ -31,6 +31,56 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool isMinimized_ = false;
         ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
             | ImGuiWindowFlags_NoFocusOnAppearing;
+        class ImageLinkWrapper
+        {
+            std::shared_ptr<ImageWrapper> m_image = nullptr;
+            std::string m_url;
+
+        public:
+            explicit ImageLinkWrapper(std::string url, std::shared_ptr<GameWrapper> gw)
+                : m_url(std::move(url))
+            {
+                const auto tmp_name = std::to_string(std::hash<std::string>{}(m_url));
+                const auto path = gw->GetDataFolder() / "imageCache" / tmp_name;
+                if (exists(path))
+                {
+                    LOG("using image cache");
+                    LoadImageData(path);
+                }
+                else
+                {
+                    create_directories(path.parent_path());
+                    DownloadImage(path);
+                }
+
+            }
+
+            [[nodiscard]] void* GetImguiPtr() const
+            {
+                return m_image != nullptr ? m_image->GetImGuiTex() : nullptr;
+            }
+
+        private:
+            void DownloadImage(const std::filesystem::path& cache_path)
+            {
+                const CurlRequest req{ m_url, "GET" };
+                HttpWrapper::SendCurlRequest(req, cache_path.wstring(), [this](int i, const std::wstring path)
+                    {
+                        LOG("File downloaded: {}", i);
+                        if (i == 200)
+                        {
+                            LoadImageData(path);
+                        }
+                    });
+            }
+
+            void LoadImageData(const std::filesystem::path& path)
+            {
+                LOG("Loading image data");
+                m_image = std::make_shared<ImageWrapper>(path, false, true);
+            }
+        };
+        std::shared_ptr<ImageLinkWrapper> cover;
         
     private:
         
