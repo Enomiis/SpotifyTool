@@ -147,13 +147,15 @@ void SpotifyTool::Sync_spotify() {
 				json playing_json = json::parse(currently_playing);
 				song = playing_json["item"]["name"];
 				LOG("Song{}", song);
-				WriteInFile("song.txt", "");
 				WriteInFile("song.txt", song);
 				artist = playing_json["item"]["artists"][0]["name"];
-				WriteInFile("artist.txt", "");
 				WriteInFile("artist.txt", artist);
-				picture = playing_json["item"]["album"]["images"][1]["url"];
+				picture = playing_json["item"]["album"]["images"][0]["url"];
 				WriteInFile("picture.txt", picture);
+				/*duration = playing_json["item"]["duration_ms"];
+				WriteInFile("duration.txt", duration);
+				progress = playing_json["progress_ms"];
+				WriteInFile("progress.txt", progress);*/
 			}
 		});
 
@@ -303,25 +305,30 @@ void SpotifyTool::Render() {
 			ImGui::Text("The custom font haven't been loaded yet");
 		}
 	
-
-	
 		// First ensure the font is actually loaded
 		if (myFont) {
 			ImGui::PushFont(myFont);
 		}
-		time += ImGui::GetIO().DeltaTime;
-		time2 += ImGui::GetIO().DeltaTime;
-		if (time > 30)
+		if (doOnce) {
+			duration_ms = std::stoi(LoadofFile("duration.txt"));
+			progress_ms = std::stoi(LoadofFile("progress.txt"));
+			song_duration = (duration_ms - progress_ms) / 1000;
+			doOnce = false;
+		}
+		counter += ImGui::GetIO().DeltaTime;
+		token_denied += ImGui::GetIO().DeltaTime;
+		if (counter > song_duration)
 		{
 			Sync_spotify();
 			song = LoadofFile("song.txt");
 			cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
-			time = 0;
+			counter = 0;
+			doOnce = true;
 		}
-		if (time2 > 3500)
+		if (token_denied > 3500)
 		{
 			Refresh_token();
-			time2 = 0;
+			token_denied = 0;
 		}
 
 		
@@ -329,7 +336,7 @@ void SpotifyTool::Render() {
 		{
 			if (auto* ptr = cover->GetImguiPtr())
 			{
-				ImGui::Image(ptr, { 256, 256 });
+				ImGui::Image(ptr, { 64, 64 });
 			}
 			else
 			{
