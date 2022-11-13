@@ -316,37 +316,20 @@ void SpotifyTool::Render() {
 		}
 		counter += ImGui::GetIO().DeltaTime;
 		token_denied += ImGui::GetIO().DeltaTime;
-		if (counter > song_duration)
-		{
-			Sync_spotify();
-			song = LoadofFile("song.txt");
-			cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
-			counter = 0;
-			doOnce = true;
-			if (cover)
-			{
-				if (auto* ptr = cover->GetImguiPtr())
-				{
-					ImGui::Image(ptr, { 64, 64 });
-				}
-				else
-				{
-					if (myFont) {
-						ImGui::PushFont(myFont);
-					}
-					ImGui::Text("Loading");
-					if (myFont) {
-						ImGui::PopFont();
-					}
-				}
-			}
-		}
+		
 		if (token_denied > 3500)
 		{
 			Refresh_token();
 			token_denied = 0;
 		}
-		
+		if (counter > song_duration)
+		{
+			Sync_spotify();
+			song = LoadofFile("song.txt");
+			counter = 0;
+			doOnce = true;
+			cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
+		}
 		if (cover)
 		{
 			if (auto* ptr = cover->GetImguiPtr())
