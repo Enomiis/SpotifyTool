@@ -26,7 +26,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool song_sync = true;
         bool inDragMode = false;
         bool doOnce = true;
-        float counter, token_denied,song_duration;
+        float counter, token_denied, song_duration, cover_refresh;
         ImFont* myFont;
         bool isWindowOpen_ = false;
         bool isMinimized_ = false;
