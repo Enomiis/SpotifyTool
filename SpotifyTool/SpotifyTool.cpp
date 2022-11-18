@@ -35,6 +35,7 @@ void SpotifyTool::onLoad()
 	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10, true);
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
+		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 		}, "", PERMISSION_ALL);
 	Setup_spotify();
 	Refresh_token();
@@ -296,6 +297,19 @@ void SpotifyTool::Render() {
 		}
 		if (myFont) {
 			ImGui::PushFont(myFont);
+			if (cover)
+			{
+				if (auto* ptr = cover->GetImguiPtr())
+				{
+					ImGui::Image(ptr, { 64, 64 });
+				}
+				else
+				{
+					ImGui::Text("Loading");
+				}
+			}
+			ImGui::SameLine();
+			ImGui::BeginGroup();
 			ImGui::Text("%s",song.c_str());
 			ImGui::Text("%s", artist.c_str());
 		}
@@ -341,21 +355,10 @@ void SpotifyTool::Render() {
 		return;
 	}
 
-	if (cover_refresh > song_duration + 2) {
+	if (cover_refresh > song_duration + 2) 
+	{
 		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 		cover_refresh = 0;
-	}
-
-	if (cover)
-	{
-		if (auto* ptr = cover->GetImguiPtr())
-		{
-			ImGui::Image(ptr, { 64, 64 });
-		}
-		else
-		{
-			ImGui::Text("Loading");
-		}
 	}
 
 	if (myFont) {
