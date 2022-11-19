@@ -13,12 +13,11 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginWindow
     {
     private:
-        std::string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing;
-        std::string song_file = "C:\\Users\\User\\AppData\\Roaming\\bakkesmod\\bakkesmod\\SpotifyTool\\song.txt";
+        std::string code_spotify, refresh_token, access_token, token, picture, artist,song_artist, auth_bearer,auth,playing,formated_playing,base64;
         bool stoolEnabled = true;
         bool moveOverlay = false;
         int duration_ms, duration, progress, progress_ms;
-        std::string setup_status;
+        std::string setup_statut;
         std::string song;
         std::ifstream file, song_json;
         std::string response;
