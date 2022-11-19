@@ -54,28 +54,31 @@ void SpotifyTool::onLoad()
 }
 
 #pragma region Data manipulation
-void SpotifyTool::WriteInFile(std::string _param, std::string _value)
+struct MySetting
 {
-	ifstream stream;
-	stream.open("stool_config.json");
-	json config_json = json::parse(stream);
-	config_json[_param] = _value;
-	std::ofstream file("stool_config.json");
-	file << config_json;
+	std::string code;
+	std::string access_token;
+	std::string refresh_token;
+	std::string setup_statut;
+	std::string song;
+	std::string artist;
+	std::string picture;
+	std::string duration;
+	std::string progress;
+	std::string base64;
+
+	static MySetting Load(const std::filesystem::path& load_path);
+	void Save(const std::filesystem::path& save_path);
+};
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(MySetting, foo, bar, baars)
+MySetting MySetting::Load(const std::filesystem::path& load_path)
+{
+    return json::parse(std::ifstream(load_path));
 }
-string SpotifyTool::LoadofFile(std::string _param)
+
+void MySetting::Save(const std::filesystem::path& save_path)
 {
-	string value;
-	ifstream stream;
-	stream.open("stool_config.json");
-	json config_json = json::parse(stream);
-	if (stream.is_open())
-	{
-		getline(stream, _param);
-		stream.close();
-		cout << value;
-	}
-	return value;
+    std::ofstream(save_path) << json{*this};
 }
 
 void SpotifyTool::onUnload() {

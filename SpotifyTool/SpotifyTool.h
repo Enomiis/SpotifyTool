@@ -21,6 +21,8 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         std::string song;
         std::ifstream file, song_json;
         std::string response;
+        std::string load_path = "stool_config.json";
+        std::string save_path = "stool_config.json";
         std::string currently_playing;
         bool song_sync = true;
         bool inDragMode = false;
@@ -82,14 +84,12 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
             }
         };
         std::shared_ptr<ImageLinkWrapper> cover;
-        
+     
     private:
         
         virtual void onLoad();
         virtual void onUnload();
         void SetImGuiContext(uintptr_t ctx) override;
-        void WriteInFile(std::string _filename, std::string _value);
-        std::string LoadofFile(std::string _filename);
         void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
         void RenderSettings() override;
         void Render() override;
@@ -105,5 +105,4 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool IsActiveOverlay();
         void OnOpen();
         void OnClose();
-    
     };
