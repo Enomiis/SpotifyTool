@@ -2,5 +2,5 @@
 4|X position|stool_x_location|0|1.0
 4|Y position|stool_y_location|0|1.0
 4|Scale|stool_scale|0|10
-1|Display information in game|stool_disp_ig
+1|Display Song in-game|enableCvar
 1|Hide overlay while in-game|stool_hide_overlay_ig

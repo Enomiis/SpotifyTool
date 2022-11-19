@@ -26,7 +26,8 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         bool song_sync = true;
         bool inDragMode = false;
         bool doOnce = true;
-        float counter, token_denied, song_duration, cover_refresh;
+        bool skipped = true;
+        float counter, token_denied, song_duration, skip_delay;
         ImFont* myFont;
         bool isWindowOpen_ = false;
         bool isMinimized_ = false;
@@ -96,6 +97,8 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
         void Sync_spotify();
         void Setup_spotify();
         void Refresh_token();
+        void Skip_song();
+
         std::string GetPluginName();
         std::string GetMenuName();
         std::string GetMenuTitle();

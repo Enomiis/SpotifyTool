@@ -12,10 +12,10 @@ TO DO LIST:
  Parse access token (DONE)
  Parse refresh token (DONE)
  Get song (DONE)
- Get picture
+ Get picture (DONE)
  Picture in options
- Skip/Pause
- Keybinds
+ Skip/Pause (DONE)
+ Keybinds (DONE)
  LEARN TO FCKG CODE IN C++
 */
 
@@ -35,12 +35,13 @@ void SpotifyTool::onLoad()
 	cvarManager->registerCvar("stool_scale", "1", "Overlay scale", true, true, 0, true, 10, true);
 	cvarManager->registerNotifier("Sync_spotify", [this](std::vector<std::string> args) {
 		Sync_spotify();
-		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 		}, "", PERMISSION_ALL);
 	Setup_spotify();
 	Refresh_token();
 	Sync_spotify();
-
+	cvarManager->registerNotifier("Skip_song", [this](std::vector<std::string> args) {
+		Skip_song();
+		}, "", PERMISSION_ALL);
 	cvarManager->log("working bro");
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetDataFolder() / "spotifytool_logo.png");
 	gameWrapper->Toast("SpotifyTool", "SpotifyTool is loaded", "spotifytool_logo", 5.0, ToastType_Warning);
@@ -156,9 +157,19 @@ void SpotifyTool::Sync_spotify() {
 				WriteInFile("duration.txt", std::to_string(duration));
 				progress = playing_json["progress_ms"];
 				WriteInFile("progress.txt", std::to_string(progress));
+				cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
+				if (cover)
+				{
+					if (auto* ptr = cover->GetImguiPtr())
+					{
+						ImGui::Image(ptr, { 80, 80 });
+					}
+					else {
+						LOG("Image Loading...");
+					}
+				}
 			}
 		});
-	cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 }
 
 void SpotifyTool::Refresh_token() {
@@ -183,6 +194,34 @@ void SpotifyTool::Refresh_token() {
 		});
 }
 
+void SpotifyTool::Skip_song() {
+	access_token = LoadofFile("access_token.txt");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_skip;
+	req_skip.url = "https://api.spotify.com/v1/me/player/next";
+	req_skip.verb = "POST";
+	req_skip.headers = {
+		{"Authorization", auth_bearer},
+		{"Content-Length", "0"},
+		{"Content-Type", "application/json"}
+	};
+
+	HttpWrapper::SendCurlRequest(req_skip, [this](int response_code, std::string result_skip)
+		{
+			LOG("Request_result\n{}", response_code);
+			if (response_code == 204) {
+				LOG("Song skipped");
+				LOG("Song refreshed");
+				skipped = true;
+				doOnce = true;
+			}
+			else {
+				LOG("Request Problem in Skip_song {}, please contact the creator with this code", response_code);
+			}
+		});
+	
+}
 
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
@@ -193,14 +232,9 @@ std::string SpotifyTool::GetPluginName()
 
 #pragma region Rendering
 void SpotifyTool::RenderSettings() {
-	if (myFont) {
-		ImGui::PushFont(myFont);
-	}
-	
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify. Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
-		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
 	}
 	ImGui::Checkbox("Drag Mode", &moveOverlay);
 
@@ -236,18 +270,6 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::SliderFloat("Text Y Location", &yLoc, 0.0, 1080)) {
 		yLocCvar.setValue(yLoc);
 	}
-
-	CVarWrapper stool_scale = cvarManager->getCvar("stool_scale");
-	if (!stool_scale) { return; }
-	float scale = stool_scale.getFloatValue();
-	if (ImGui::SliderFloat("Scale", &scale, 0.01, 10.0)) {
-		stool_scale.setValue(scale);
-	}
-	
-	if (myFont) {
-		ImGui::PopFont();
-	}
-	
 }
 
 void SpotifyTool::SetImGuiContext(uintptr_t ctx)
@@ -273,10 +295,17 @@ void SpotifyTool::Render() {
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 
 	if (!enableCvar) {
+		if (myFont) {
+			ImGui::PopFont();
+		}
 		return;
 	}
 	bool enabled = enableCvar.getBoolValue();
 	if (enabled) {
+		// First ensure the font is actually loaded
+		if (myFont) {
+			ImGui::PushFont(myFont);
+		}
 		ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
 			| ImGuiWindowFlags_NoFocusOnAppearing;
 
@@ -296,12 +325,11 @@ void SpotifyTool::Render() {
 			return;
 		}
 		if (myFont) {
-			ImGui::PushFont(myFont);
 			if (cover)
 			{
 				if (auto* ptr = cover->GetImguiPtr())
 				{
-					ImGui::Image(ptr, { 64, 64 });
+					ImGui::Image(ptr, { 80, 80 });
 				}
 				else
 				{
@@ -318,10 +346,6 @@ void SpotifyTool::Render() {
 			ImGui::Text("The custom font haven't been loaded yet");
 		}
 	
-		// First ensure the font is actually loaded
-		if (myFont) {
-			ImGui::PushFont(myFont);
-		}
 		if (doOnce) {
 			duration_ms = std::stoi(LoadofFile("duration.txt"));
 			progress_ms = std::stoi(LoadofFile("progress.txt"));
@@ -330,7 +354,9 @@ void SpotifyTool::Render() {
 		}
 		counter += ImGui::GetIO().DeltaTime;
 		token_denied += ImGui::GetIO().DeltaTime;
-		cover_refresh += ImGui::GetIO().DeltaTime;
+		if (skipped) {
+			skip_delay += ImGui::GetIO().DeltaTime;
+		}
 		
 		if (token_denied > 3500)
 		{
@@ -343,22 +369,18 @@ void SpotifyTool::Render() {
 			song = LoadofFile("song.txt");
 			doOnce = true;
 			counter = 0;
+			skipped = false;
 		}
-		
-		if (myFont) {
-			ImGui::PopFont();
+		if (skip_delay > 1) {
+			Sync_spotify();
+			skipped = false;
+			skip_delay = 0;
 		}
 	}
 
 	else
 	{
 		return;
-	}
-
-	if (cover_refresh > song_duration + 2) 
-	{
-		cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
-		cover_refresh = 0;
 	}
 
 	if (myFont) {
