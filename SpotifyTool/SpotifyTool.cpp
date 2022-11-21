@@ -98,7 +98,7 @@ void SpotifyTool::Setup_spotify() {
 		req.verb = "POST";
 		req.headers = {
 
-			{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+			{"Authorization", "Basic xxx" },
 			{"Content-Type", "application/x-www-form-urlencoded"}
 		};
 		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code_spotify;
