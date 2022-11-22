@@ -101,5 +101,4 @@ private:
     bool IsActiveOverlay();
     void OnOpen();
     void OnClose();
-    void GenerateSettingsFile();
 };
