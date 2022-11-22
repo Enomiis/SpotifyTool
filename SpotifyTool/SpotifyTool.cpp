@@ -25,6 +25,14 @@ using namespace std;
 using json = nlohmann::json;
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
+std::string NEXT_KEYBIND = "S";
+std::string PREVIOUS_KEYBIND = "P";
+std::string PAUSE_KEYBIND = "A";
+
+const std::string NEXT_HOTKEY = "next_hotkey";
+const std::string PREVIOUS_HOTKEY = "previous_hotkey";
+const std::string PAUSE_HOTKEY = "pause_hotkey";
+
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -38,9 +46,36 @@ void SpotifyTool::onLoad()
 	Setup_spotify();
 	Refresh_token();
 	Sync_spotify();
-	cvarManager->registerNotifier("Skip_song", [this](std::vector<std::string> args) {
-		Skip_song();
-		}, "", PERMISSION_ALL);
+	cvarManager->registerCvar(NEXT_HOTKEY, NEXT_KEYBIND, "Next song Hotkey", false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+				cvarManager->log("New Bind = > " + cvar.getStringValue());
+		});
+	cvarManager->registerNotifier(
+		"Skip_song",
+		[this](std::vector<std::string> args) { Skip_song(); },
+		"Skip the current song",
+		PERMISSION_ALL
+	);
+	cvarManager->registerCvar(PREVIOUS_HOTKEY, PREVIOUS_KEYBIND, "Previous song Hotkey", false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+				cvarManager->log("New Bind = > " + cvar.getStringValue());
+			});
+	cvarManager->registerNotifier(
+		"Prev_song",
+		[this](std::vector<std::string> args) { Prev_song(); },
+		"Jump to the previous song",
+		PERMISSION_ALL
+	);
+	cvarManager->registerCvar(PAUSE_HOTKEY, PAUSE_KEYBIND, "Pause/Resume song Hotkey", false)
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
+				cvarManager->log("New Bind = > " + cvar.getStringValue());
+			});
+	cvarManager->registerNotifier(
+		"Pause_song",
+		[this](std::vector<std::string> args) { Pause_song(); },
+		"Pause/Resume the current song",
+		PERMISSION_ALL
+	);
 	gameWrapper->LoadToastTexture("spotifytool_logo", gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "spotifytool_logo.png");
 	gameWrapper->Toast("SpotifyTool", "SpotifyTool is loaded", "spotifytool_logo", 5.0, ToastType_Warning);
 	cvarManager->registerCvar("stool_enabled", "1", "Enable Spotify Tool", true, true, 0, true, 1)
@@ -52,6 +87,22 @@ void SpotifyTool::onLoad()
 
 void SpotifyTool::onUnload() {
 
+	CVarWrapper nextHotkeyCVar = cvarManager->getCvar(NEXT_HOTKEY);
+	CVarWrapper previousHotkeyCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
+	CVarWrapper pauseHotkeyCVar = cvarManager->getCvar(PAUSE_HOTKEY);
+	if (nextHotkeyCVar) {
+		std::string bind_next = nextHotkeyCVar.getStringValue();
+		cvarManager->removeBind(bind_next);
+	}
+	if (previousHotkeyCVar) {
+		std::string bind_previous = previousHotkeyCVar.getStringValue();
+		cvarManager->removeBind(bind_previous);
+	}
+	if (pauseHotkeyCVar) {
+		std::string bind_pause = pauseHotkeyCVar.getStringValue();
+		cvarManager->removeBind(bind_pause);
+	}
+	
 	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 	json data = json::parse(f);
 	f.close();
@@ -229,14 +280,86 @@ void SpotifyTool::Skip_song() {
 			if (response_code == 204) {
 				LOG("Song skipped");
 				LOG("Song refreshed");
-				skipped = true;
-				doOnce = true;
+				counter = 0;
+				Sync_spotify();
 			}
 			else {
-				LOG("Request Problem in Skip_song {}, please contact the creator with this code", response_code);
+				LOG("Request Problem in Skip_song {}, got {}, please contact the creator with this code", response_code, result_skip);
 			}
 		});
 }
+
+/* A EDITER */
+void SpotifyTool::Prev_song() {
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_prev;
+	req_prev.url = "https://api.spotify.com/v1/me/player/previous";
+	req_prev.verb = "POST";
+	req_prev.headers = {
+		{"Authorization", auth_bearer},
+		{"Content-Length", "0"},
+		{"Content-Type", "application/json"}
+	};
+	HttpWrapper::SendCurlRequest(req_prev, [this](int response_code, std::string result_skip)
+		{
+			LOG("Request_result\n{}", response_code);
+			if (response_code == 204) {
+				LOG("Jump to previous song");
+				LOG("Song refreshed");
+				counter = 0;
+				Sync_spotify();
+			}
+			else {
+				LOG("Request Problem in Prev_song {}, got {}, please contact the creator with this code", response_code, result_skip);
+			}
+		});
+}
+
+void SpotifyTool::Pause_song() {
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_prev;
+	if (paused) {
+		req_prev.url = "https://api.spotify.com/v1/me/player/play";
+		paused = false;
+	}
+	else {
+		req_prev.url = "https://api.spotify.com/v1/me/player/pause";
+		paused = true;
+	}
+	req_prev.verb = "PUT";
+	req_prev.headers = {
+		{"Authorization", auth_bearer},
+		{"Content-Length", "0"},
+		{"Content-Type", "application/json"}
+	};
+	HttpWrapper::SendCurlRequest(req_prev, [this](int response_code, std::string result_skip)
+		{
+			LOG("Request_result\n{}", response_code);
+			if (response_code == 204) {
+				if (paused) {
+					LOG("Song paused!");
+				}
+				else {
+					LOG("Song resumed!");
+				}
+			}
+			else {
+				LOG("Request Problem in Pause_song {}, got {}, please contact the creator with this code", response_code, result_skip);
+			}
+		});
+}
+
+/* FIN A EDITER*/
 
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
@@ -247,6 +370,16 @@ std::string SpotifyTool::GetPluginName()
 
 #pragma region Rendering
 void SpotifyTool::RenderSettings() {
+	const char* keybinds[] = { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero", "F1", "F3", "F4", "F5", "F7", "F8", "F9", "F11", "F12",
+		"NumPadOne", "NumPadTwo", "NumPadThree", "NumPadFour", "NumPadFive", "NumPadSix", "NumPadSeven", "NumPadEight", "NumPadNine", "NumPadZero",
+		"XboxTypeS_LeftThumbStick", "XboxTypeS_RightThumbStick", "XboxTypeS_DPad_Up", "XboxTypeS_DPad_Left", "XboxTypeS_DPad_Right",  "XboxTypeS_DPad_Down",
+		"XboxTypeS_LeftX", "XboxTypeS_LeftY", "XboxTypeS_RightX", "XboxTypeS_RightY", "XboxTypeS_X", "XboxTypeS_Y", "XboxTypeS_A", "XboxTypeS_A",
+		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
+
+	static int pause_keybind_index = 43;
+	static int previous_keybind_index = 58;
+	static int next_keybind_index = 61;
+
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
@@ -258,12 +391,10 @@ void SpotifyTool::RenderSettings() {
 	}
 
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
-
-	if (!enableCvar) {
-		return;
+	bool enabled = false;
+	if (enableCvar) {
+		enabled = enableCvar.getBoolValue();
 	}
-
-	bool enabled = enableCvar.getBoolValue();
 
 	if (ImGui::Checkbox("Enable plugin", &enabled)) {
 		enableCvar.setValue(enabled);
@@ -271,7 +402,27 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Toggle SpotifyTool Plugin");
 	}
-
+	cvarManager->removeBind(keybinds[next_keybind_index]);
+	cvarManager->removeBind(keybinds[previous_keybind_index]);
+	cvarManager->removeBind(keybinds[pause_keybind_index]);
+	ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
+	cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
+	cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
+	CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
+	CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
+	CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
+	if (skipEnableCVar) {
+		skipEnableCVar.setValue(keybinds[next_keybind_index]);
+	}
+	if (previousEnableCVar) {
+		previousEnableCVar.setValue(keybinds[previous_keybind_index]);
+	}
+	if (pauseEnableCVar) {
+		pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
+	}
 
 	CVarWrapper xLocCvar = cvarManager->getCvar("stool_x_location");
 	if (!xLocCvar) { return; }
@@ -365,10 +516,12 @@ void SpotifyTool::Render() {
 		if (doOnce) {
 			duration_ms = data.value("duration", 0);
 			progress_ms = data.value("progress", 0);
-			song_duration = ((duration_ms - progress_ms) / 1000) + 4;
+			song_duration = ((duration_ms - progress_ms) / 1000) + 1;
 			doOnce = false;
 		}
-		counter += ImGui::GetIO().DeltaTime;
+		if (!paused) {
+			counter += ImGui::GetIO().DeltaTime;
+		}
 		token_denied += ImGui::GetIO().DeltaTime;
 		if (skipped) {
 			skip_delay += ImGui::GetIO().DeltaTime;
