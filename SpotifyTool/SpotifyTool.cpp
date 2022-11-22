@@ -25,8 +25,6 @@ using namespace std;
 using json = nlohmann::json;
 shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
-
-
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -52,75 +50,64 @@ void SpotifyTool::onLoad()
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
 }
 
-#pragma region Data manipulation
-void SpotifyTool::WriteInFile(std::string _filename, std::string _value)
-{
-	std::ofstream stream(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + _filename, std::ios::out | std::ios::trunc);
-
-	if (stream.is_open())
-	{
-		stream << _value;
-		stream.close();
-	}
-	else
-	{
-		cvarManager->log("Can't write to file: " + _filename);
-		cvarManager->log("Value to write was: " + _value);
-	}
-}
-string SpotifyTool::LoadofFile(std::string _filename)
-{
-	string value;
-	ifstream stream;
-	stream.open(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + _filename);
-	if (stream.is_open())
-	{
-		getline(stream, value);
-		stream.close();
-		cout << value;
-	}
-	return value;
-}
-
 void SpotifyTool::onUnload() {
 
-	WriteInFile("song.txt", "No Spotify Activity");
-
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	data["song"] = "No Spotify Activity";
+	std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	file << data;
+	file.close();
 }
 
 #pragma region Spotify
 void SpotifyTool::Setup_spotify() {
-	code_spotify = LoadofFile("code.txt");
-	setup_statut = LoadofFile("setup_statut.txt");
-	if (setup_statut == "false") {
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	code_spotify = data.value("code", "");
+	setup_statut = data.value("setup_statut", false);
+	std::string auth_setup_base = "Basic ";
+	std::string auth_setup = auth_setup_base + data.value("base64", "");
+	if (setup_statut == false) {
 		CurlRequest req;
 		req.url = "https://accounts.spotify.com/api/token";
 		req.verb = "POST";
 		req.headers = {
-
-			{"Authorization", "Basic xxx" },
+			{"Authorization", auth_setup },
 			{"Content-Type", "application/x-www-form-urlencoded"}
 		};
 		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code_spotify;
-
 		LOG("sending body request");
 		HttpWrapper::SendCurlRequest(req, [this](int response_code, std::string result)
-			{
-				if (response_code == 200) {
-					token = result;
-					json token_complete = json::parse(token.begin(), token.end());
-					refresh_token = token_complete["refresh_token"];
-					access_token = token_complete["access_token"];
-					WriteInFile("access_token.txt", access_token);
-					WriteInFile("refresh_token.txt", refresh_token);
-
-				}
-				else {
-					LOG("Problem with setup...");
-				}
-			});
-		setup_statut = "true";
-		WriteInFile("setup_statut.txt", setup_statut);
+		{
+			if (response_code == 200) {
+				json token_complete = json::parse(result.begin(), result.end());
+				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				json data = json::parse(f);
+				f.close();
+				refresh_token = token_complete["refresh_token"];
+				access_token = token_complete["access_token"];
+				data["access_token"] = access_token;
+				data["refresh_token"] = refresh_token;
+				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				file << data;
+				file.close();
+				LOG("Setup completed with success!");
+			}
+			else {
+				LOG("Problem with setup... Error code {}, got {} as a result", response_code, result);
+			}
+		});
+		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		json data = json::parse(f);
+		f.close();
+		setup_statut = true;
+		data["setup_statut"] = setup_statut;
+		std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		file << data;
+		file.close();
 	}
 	else {
 		LOG("Setup already done");
@@ -129,7 +116,10 @@ void SpotifyTool::Setup_spotify() {
 
 void SpotifyTool::Sync_spotify() {
 
-	access_token = LoadofFile("access_token.txt");
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
 	auth = "Bearer ";
 	auth_bearer = auth + access_token;
 	CurlRequest req_playing;
@@ -140,26 +130,23 @@ void SpotifyTool::Sync_spotify() {
 		{"Authorization", auth_bearer},
 		{"Content-Type", "application/json"}
 	};
-
 	HttpWrapper::SendCurlRequest(req_playing, [this](int response_code, std::string result_playing)
 		{
 
 			currently_playing = result_playing;
 			LOG("Request_result\n{}", response_code);
 			if (response_code == 200) {
+				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				json data = json::parse(f);
+				f.close();
 				json playing_json = json::parse(currently_playing);
 				song = playing_json["item"]["name"];
 				LOG("Song{}\n", song);
-				WriteInFile("song.txt", song);
 				artist = playing_json["item"]["artists"][0]["name"];
-				WriteInFile("artist.txt", artist);
 				picture = playing_json["item"]["album"]["images"][0]["url"];
-				WriteInFile("picture.txt", picture);
 				duration = playing_json["item"]["duration_ms"];
-				WriteInFile("duration.txt", std::to_string(duration));
 				progress = playing_json["progress_ms"];
-				WriteInFile("progress.txt", std::to_string(progress));
-				cover = std::make_shared<ImageLinkWrapper>(LoadofFile("picture.txt"), gameWrapper);
+				cover = std::make_shared<ImageLinkWrapper>(picture, gameWrapper);
 				if (cover)
 				{
 					if (auto* ptr = cover->GetImguiPtr())
@@ -170,6 +157,14 @@ void SpotifyTool::Sync_spotify() {
 						LOG("Image Loading...");
 					}
 				}
+				data["song"] = song;
+				data["artist"] = artist;
+				data["picture"] = picture;
+				data["duration"] = duration;
+				data["progress"] = progress;
+				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				file << data;
+				file.close();
 			}
 			else {
 				LOG("ERROR IN Sync_spotify with response code {}", response_code);
@@ -178,23 +173,34 @@ void SpotifyTool::Sync_spotify() {
 }
 
 void SpotifyTool::Refresh_token() {
-	refresh_token = LoadofFile("refresh_token.txt");
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	refresh_token = data.value("refresh_token", "");
 	CurlRequest req_refresh;
 	req_refresh.url = "https://accounts.spotify.com/api/token";
 	req_refresh.verb = "POST";
+	std::string auth_setup_base = "Basic ";
+	std::string auth_setup = auth_setup_base + data.value("base64", "");
 	req_refresh.headers = {
 
-		{"Authorization", "Basic ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=" },
+		{"Authorization", auth_setup },
 		{"Content-Type", "application/x-www-form-urlencoded"}
 	};
 	req_refresh.body = "grant_type=refresh_token&refresh_token=" + refresh_token;
 	HttpWrapper::SendCurlRequest(req_refresh, [this](int response_code, std::string result)
 		{
 			if (response_code == 200) {
-				token = result;
-				json token_complete = json::parse(token.begin(), token.end());
+				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				json data = json::parse(f);
+				f.close();
+				json token_complete = json::parse(result.begin(), result.end());
 				access_token = token_complete["access_token"];
-				WriteInFile("access_token.txt", access_token);
+				data["access_token"] = access_token;
+				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				file << data;
+				file.close();
+				LOG("Refresh was a success!");
 			}
 			else {
 				LOG("ERROR IN Refresh_token with response code {}", response_code);
@@ -203,7 +209,10 @@ void SpotifyTool::Refresh_token() {
 }
 
 void SpotifyTool::Skip_song() {
-	access_token = LoadofFile("access_token.txt");
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
 	auth = "Bearer ";
 	auth_bearer = auth + access_token;
 	CurlRequest req_skip;
@@ -214,8 +223,7 @@ void SpotifyTool::Skip_song() {
 		{"Content-Length", "0"},
 		{"Content-Type", "application/json"}
 	};
-
-	HttpWrapper::SendCurlRequest(req_skip, [this](int response_code, std::string result_skip)
+	HttpWrapper::SendCurlRequest(req_skip, [&](int response_code, std::string result_skip)
 		{
 			LOG("Request_result\n{}", response_code);
 			if (response_code == 204) {
@@ -228,7 +236,6 @@ void SpotifyTool::Skip_song() {
 				LOG("Request Problem in Skip_song {}, please contact the creator with this code", response_code);
 			}
 		});
-
 }
 
 // Name of the plugin to be shown on the f2 -> plugins list
@@ -325,7 +332,9 @@ void SpotifyTool::Render() {
 		// uncomment if you don't want a background (flag found by just checking for the other window flags available
 		//WindowFlags |= ImGuiWindowFlags_NoBackground;
 
-
+		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		json data = json::parse(f);
+		f.close();
 		if (!ImGui::Begin(GetMenuTitle().c_str(), &isWindowOpen_, WindowFlags))
 		{
 			// Early out if the window is collapsed, as an optimization.
@@ -346,17 +355,16 @@ void SpotifyTool::Render() {
 			}
 			ImGui::SameLine();
 			ImGui::BeginGroup();
-			ImGui::Text("%s", song.c_str());
-			ImGui::Text("%s", artist.c_str());
+			ImGui::Text("%s", data.value("song", "").c_str());
+			ImGui::Text("%s", data.value("artist", "").c_str());
 		}
 		else
 		{
 			ImGui::Text("The custom font haven't been loaded yet");
 		}
-
 		if (doOnce) {
-			duration_ms = std::stoi(LoadofFile("duration.txt"));
-			progress_ms = std::stoi(LoadofFile("progress.txt"));
+			duration_ms = data.value("duration", 0);
+			progress_ms = data.value("progress", 0);
 			song_duration = ((duration_ms - progress_ms) / 1000) + 4;
 			doOnce = false;
 		}
@@ -374,7 +382,7 @@ void SpotifyTool::Render() {
 		if (counter > song_duration)
 		{
 			Sync_spotify();
-			song = LoadofFile("song.txt");
+			song = data.value("song", "");
 			doOnce = true;
 			counter = 0;
 			skipped = false;

@@ -13,7 +13,8 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginWindow
 {
 private:
-    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, setup_statut, song, currently_playing;
+    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, song, currently_playing;
+    bool setup_statut = false;
     bool stoolEnabled = true;
     bool moveOverlay = false;
     int duration_ms, duration, progress, progress_ms;
@@ -83,8 +84,6 @@ private:
     virtual void onLoad();
     virtual void onUnload();
     void SetImGuiContext(uintptr_t ctx) override;
-    void WriteInFile(std::string _filename, std::string _value);
-    std::string LoadofFile(std::string _filename);
     void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
     void RenderSettings() override;
     void Render() override;
@@ -92,7 +91,6 @@ private:
     void Setup_spotify();
     void Refresh_token();
     void Skip_song();
-
     std::string GetPluginName();
     std::string GetMenuName();
     std::string GetMenuTitle();
@@ -100,5 +98,4 @@ private:
     bool IsActiveOverlay();
     void OnOpen();
     void OnClose();
-
 };
