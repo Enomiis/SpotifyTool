@@ -1,4 +1,5 @@
 set /p UserInputPath=Directory to BakkesMod folder? 
+if %cd:~0,1% NEQ %UserInputPath:~0,1% %UserInputPath:~0,1%:
 cd %UserInputPath%
 if not exist "SpotifyTool" md "SpotifyTool"
 cd SpotifyTool
