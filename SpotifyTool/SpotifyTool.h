@@ -19,6 +19,9 @@ private:
     bool paused = false;
     int snapping_grid_size_x = 100;
     int snapping_grid_size_y = 100;
+    int text_color_r = 255;
+    int text_color_g = 255;
+    int text_color_b = 255;
     int screenSizeX = 1920;
     int screenSizeY = 1080;
     bool moveOverlay = false;

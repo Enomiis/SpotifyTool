@@ -372,13 +372,6 @@ void SpotifyTool::RenderSettings() {
 	static int next_keybind_index = 61;
 
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
-	if (ImGui::Button("Sync Spotify")) {
-		Sync_spotify();
-	}
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Sync your activity");
-	}
-
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
 	if (enableCvar) {
@@ -389,17 +382,34 @@ void SpotifyTool::RenderSettings() {
 	}
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Toggle SpotifyTool Plugin");
-	}	
-	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None))
-	{
+	}
+	if (!enabled) {
+		return;
+	}
+	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
+		if (ImGui::Button("Sync Spotify")) {
+			Sync_spotify();
+		}
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Sync your activity");
+		}
 		ImGui::Checkbox("Drag Mode", &moveOverlay);
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Enable drag mode for the widget");
 		}
-		ImGui::Checkbox("Snapping mode", &snappingMode);
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Toggle the snapping mode");
+		if (moveOverlay) {
+			ImGui::Checkbox("Snapping mode", &snappingMode);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Toggle the snapping mode");
+			}
+			if (snappingMode) {
+				ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
+				ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
+			}
 		}
+		ImGui::SliderInt("Text color R", &text_color_r, 0, 255);
+		ImGui::SliderInt("Text color G", &text_color_g, 0, 255);
+		ImGui::SliderInt("Text color B", &text_color_b, 0, 255);
 		cvarManager->removeBind(keybinds[next_keybind_index]);
 		cvarManager->removeBind(keybinds[previous_keybind_index]);
 		cvarManager->removeBind(keybinds[pause_keybind_index]);
@@ -421,8 +431,6 @@ void SpotifyTool::RenderSettings() {
 		if (pauseEnableCVar) {
 			pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
 		}
-		ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
-		ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
 	}
 }
 
@@ -489,8 +497,9 @@ void SpotifyTool::Render() {
 			}
 			ImGui::SameLine();
 			ImGui::BeginGroup();
-			ImGui::Text("%s", data.value("song", "").c_str());
-			ImGui::Text("%s", data.value("artist", "").c_str());
+			ImVec4 color(text_color_r / 255.0, text_color_g / 255.0, text_color_b / 255.0, 1.0);
+			ImGui::TextColored(color,("%s", data.value("song", "").c_str()));
+			ImGui::TextColored(color, ("%s", data.value("artist", "").c_str()));
 		}
 		else
 		{
@@ -498,7 +507,11 @@ void SpotifyTool::Render() {
 		}
 		ImGuiWindow* window = ImGui::FindWindowByName(GetMenuTitle().c_str());
 		if (moveOverlay) {
+			ImGui::GetIO().WantCaptureMouse = true;
 			DragWidget(window);
+		}
+		else {
+			ImGui::GetIO().WantCaptureMouse = false;
 		}
 		if (window->Pos.x > screenSizeX - window->Size.x) {
 			window->Pos.x = screenSizeX - window->Size.x;
@@ -613,15 +626,3 @@ void SpotifyTool::OnClose()
 {
 	isWindowOpen_ = false;
 }
-
-
-// Changing color is work in progress
-/*
-	CVarWrapper textColorVar = cvarManager->getCvar("stool_color");
-	if (!textColorVar) { return; }
-	// converts from 0-255 color to 0.0-1.0 color
-	LinearColor textColor = textColorVar.getColorValue() / 255;
-	if (ImGui::ColorEdit4("Text Color", &textColor.R)) {
-		textColorVar.setValue(textColor * 255);
-	}
-*/
