@@ -378,14 +378,7 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Sync your activity");
 	}
-	ImGui::Checkbox("Drag Mode", &moveOverlay);
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Enable drag mode for the widget");
-	}
-	ImGui::Checkbox("Snapping mode", &snappingMode);
-	if (ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("Toggle the snapping mode");
-	}
+
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
 	if (enableCvar) {
@@ -397,29 +390,40 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Toggle SpotifyTool Plugin");
 	}	
-	cvarManager->removeBind(keybinds[next_keybind_index]);
-	cvarManager->removeBind(keybinds[previous_keybind_index]);
-	cvarManager->removeBind(keybinds[pause_keybind_index]);
-	ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-	ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-	ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-	cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
-	cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
-	cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
-	CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
-	CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
-	CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
-	if (skipEnableCVar) {
-		skipEnableCVar.setValue(keybinds[next_keybind_index]);
+	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None))
+	{
+		ImGui::Checkbox("Drag Mode", &moveOverlay);
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Enable drag mode for the widget");
+		}
+		ImGui::Checkbox("Snapping mode", &snappingMode);
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Toggle the snapping mode");
+		}
+		cvarManager->removeBind(keybinds[next_keybind_index]);
+		cvarManager->removeBind(keybinds[previous_keybind_index]);
+		cvarManager->removeBind(keybinds[pause_keybind_index]);
+		ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+		ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+		ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+		cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
+		cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
+		cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
+		CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
+		CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
+		CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
+		if (skipEnableCVar) {
+			skipEnableCVar.setValue(keybinds[next_keybind_index]);
+		}
+		if (previousEnableCVar) {
+			previousEnableCVar.setValue(keybinds[previous_keybind_index]);
+		}
+		if (pauseEnableCVar) {
+			pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
+		}
+		ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
+		ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
 	}
-	if (previousEnableCVar) {
-		previousEnableCVar.setValue(keybinds[previous_keybind_index]);
-	}
-	if (pauseEnableCVar) {
-		pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
-	}
-	ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
-	ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
 }
 
 void SpotifyTool::SetImGuiContext(uintptr_t ctx)
