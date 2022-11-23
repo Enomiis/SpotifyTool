@@ -526,7 +526,9 @@ void SpotifyTool::Render() {
 			ImGui::GetIO().WantCaptureMouse = false;
 		}
 		if (window->Pos.x > screenSizeX - window->Size.x || keepRight) {
-			window->Pos.x = screenSizeX - window->Size.x;
+			if (window->Pos.x != screenSizeX - window->Size.x) {
+				window->Pos.x = screenSizeX - window->Size.x;
+			}
 		}
 		if (window->Pos.y > screenSizeY - window->Size.y) {
 			window->Pos.y = screenSizeY - window->Size.y;
