@@ -178,42 +178,42 @@ void SpotifyTool::Sync_spotify() {
 		{
 
 			currently_playing = result_playing;
-			LOG("Request_result\n{}", response_code);
-			if (response_code == 200) {
-				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
-				json data = json::parse(f);
-				f.close();
-				json playing_json = json::parse(currently_playing);
-				song = playing_json["item"]["name"];
-				LOG("Song{}\n", song);
-				artist = playing_json["item"]["artists"][0]["name"];
-				picture = playing_json["item"]["album"]["images"][0]["url"];
-				duration = playing_json["item"]["duration_ms"];
-				progress = playing_json["progress_ms"];
-				cover = std::make_shared<ImageLinkWrapper>(picture, gameWrapper);
-				if (cover)
-				{
-					if (auto* ptr = cover->GetImguiPtr())
-					{
-						ImGui::Image(ptr, { 80, 80 });
-					}
-					else {
-						LOG("Image Loading...");
-					}
-				}
-				data["song"] = song;
-				data["artist"] = artist;
-				data["picture"] = picture;
-				data["duration"] = duration;
-				data["progress"] = progress;
-				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
-				file << data;
-				file.close();
-				doOnce = true;
+	LOG("Request_result\n{}", response_code);
+	if (response_code == 200) {
+		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		json data = json::parse(f);
+		f.close();
+		json playing_json = json::parse(currently_playing);
+		song = playing_json["item"]["name"];
+		LOG("Song{}\n", song);
+		artist = playing_json["item"]["artists"][0]["name"];
+		picture = playing_json["item"]["album"]["images"][0]["url"];
+		duration = playing_json["item"]["duration_ms"];
+		progress = playing_json["progress_ms"];
+		cover = std::make_shared<ImageLinkWrapper>(picture, gameWrapper);
+		if (cover)
+		{
+			if (auto* ptr = cover->GetImguiPtr())
+			{
+				ImGui::Image(ptr, { 80, 80 });
 			}
 			else {
-				LOG("ERROR IN Sync_spotify with response code {}", response_code);
+				LOG("Image Loading...");
 			}
+		}
+		data["song"] = song;
+		data["artist"] = artist;
+		data["picture"] = picture;
+		data["duration"] = duration;
+		data["progress"] = progress;
+		std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		file << data;
+		file.close();
+		doOnce = true;
+	}
+	else {
+		LOG("ERROR IN Sync_spotify with response code {}", response_code);
+	}
 		});
 }
 
@@ -271,15 +271,15 @@ void SpotifyTool::Skip_song() {
 	HttpWrapper::SendCurlRequest(req_skip, [&](int response_code, std::string result_skip)
 		{
 			LOG("Request_result\n{}", response_code);
-			if (response_code == 204) {
-				LOG("Song skipped");
-				LOG("Song refreshed");
-				counter = 0;
-				Sync_spotify();
-			}
-			else {
-				LOG("Request Problem in Skip_song {}, got {}, please contact the creator with this code", response_code, result_skip);
-			}
+	if (response_code == 204) {
+		LOG("Song skipped");
+		LOG("Song refreshed");
+		counter = 0;
+		Sync_spotify();
+	}
+	else {
+		LOG("Request Problem in Skip_song {}, got {}, please contact the creator with this code", response_code, result_skip);
+	}
 		});
 }
 
@@ -301,15 +301,15 @@ void SpotifyTool::Prev_song() {
 	HttpWrapper::SendCurlRequest(req_prev, [this](int response_code, std::string result_skip)
 		{
 			LOG("Request_result\n{}", response_code);
-			if (response_code == 204) {
-				LOG("Jump to previous song");
-				LOG("Song refreshed");
-				counter = 0;
-				Sync_spotify();
-			}
-			else {
-				LOG("Request Problem in Prev_song {}, got {}, please contact the creator with this code", response_code, result_skip);
-			}
+	if (response_code == 204) {
+		LOG("Jump to previous song");
+		LOG("Song refreshed");
+		counter = 0;
+		Sync_spotify();
+	}
+	else {
+		LOG("Request Problem in Prev_song {}, got {}, please contact the creator with this code", response_code, result_skip);
+	}
 		});
 }
 
@@ -338,17 +338,17 @@ void SpotifyTool::Pause_song() {
 	HttpWrapper::SendCurlRequest(req_prev, [this](int response_code, std::string result_skip)
 		{
 			LOG("Request_result\n{}", response_code);
-			if (response_code == 204) {
-				if (paused) {
-					LOG("Song paused!");
-				}
-				else {
-					LOG("Song resumed!");
-				}
-			}
-			else {
-				LOG("Request Problem in Pause_song {}, got {}, please contact the creator with this code", response_code, result_skip);
-			}
+	if (response_code == 204) {
+		if (paused) {
+			LOG("Song paused!");
+		}
+		else {
+			LOG("Song resumed!");
+		}
+	}
+	else {
+		LOG("Request Problem in Pause_song {}, got {}, please contact the creator with this code", response_code, result_skip);
+	}
 		});
 }
 
@@ -386,7 +386,7 @@ void SpotifyTool::RenderSettings() {
 	if (!enabled) {
 		return;
 	}
-	CVarWrapper search_song = cvarManager->getCvar("stool_ssong"); 
+	CVarWrapper search_song = cvarManager->getCvar("stool_ssong");
 	bool stool_ssong = false; // Search song button value
 	static char query_song[128] = "";
 	ImGui::InputText("", query_song, IM_ARRAYSIZE(query_song));
@@ -394,7 +394,7 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::Button("Search")) {
 		ImGui::SetTooltip("Search a song here");
 	}
-	
+
 	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
 		if (ImGui::Button("Sync Spotify")) {
 			Sync_spotify();
@@ -414,6 +414,10 @@ void SpotifyTool::RenderSettings() {
 			if (snappingMode) {
 				ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
 				ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
+				ImGui::Checkbox("Force snapping to right", &keepRight);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Force the widget to snap to right");
+				}
 			}
 		}
 		ImGui::SliderInt("Text color R", &text_color_r, 0, 255);
@@ -521,7 +525,7 @@ void SpotifyTool::Render() {
 		else {
 			ImGui::GetIO().WantCaptureMouse = false;
 		}
-		if (window->Pos.x > screenSizeX - window->Size.x) {
+		if (window->Pos.x > screenSizeX - window->Size.x || keepRight) {
 			window->Pos.x = screenSizeX - window->Size.x;
 		}
 		if (window->Pos.y > screenSizeY - window->Size.y) {

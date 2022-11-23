@@ -26,6 +26,7 @@ private:
     int screenSizeY = 1080;
     bool moveOverlay = false;
     bool snappingMode = false;
+    bool keepRight = false;
     bool stoolEnabled = true;
     int duration_ms, duration, progress, progress_ms;
     bool song_sync = true;
