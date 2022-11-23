@@ -6,6 +6,7 @@
 #include "nlohmann/json.hpp"
 #include <string>
 #include "bakkesmod/wrappers/GuiManagerWrapper.h"
+#include "IMGUI/imgui_internal.h"
 
 /*
 TO DO LIST:
@@ -47,9 +48,7 @@ void SpotifyTool::onLoad()
 	Refresh_token();
 	Sync_spotify();
 	cvarManager->registerCvar(NEXT_HOTKEY, NEXT_KEYBIND, "Next song Hotkey", false)
-		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
-				cvarManager->log("New Bind = > " + cvar.getStringValue());
-		});
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {});
 	cvarManager->registerNotifier(
 		"Skip_song",
 		[this](std::vector<std::string> args) { Skip_song(); },
@@ -57,9 +56,7 @@ void SpotifyTool::onLoad()
 		PERMISSION_ALL
 	);
 	cvarManager->registerCvar(PREVIOUS_HOTKEY, PREVIOUS_KEYBIND, "Previous song Hotkey", false)
-		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
-				cvarManager->log("New Bind = > " + cvar.getStringValue());
-			});
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {});
 	cvarManager->registerNotifier(
 		"Prev_song",
 		[this](std::vector<std::string> args) { Prev_song(); },
@@ -67,9 +64,7 @@ void SpotifyTool::onLoad()
 		PERMISSION_ALL
 	);
 	cvarManager->registerCvar(PAUSE_HOTKEY, PAUSE_KEYBIND, "Pause/Resume song Hotkey", false)
-		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
-				cvarManager->log("New Bind = > " + cvar.getStringValue());
-			});
+		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {});
 	cvarManager->registerNotifier(
 		"Pause_song",
 		[this](std::vector<std::string> args) { Pause_song(); },
@@ -80,8 +75,8 @@ void SpotifyTool::onLoad()
 	gameWrapper->Toast("SpotifyTool", "SpotifyTool is loaded", "spotifytool_logo", 5.0, ToastType_Warning);
 	cvarManager->registerCvar("stool_enabled", "1", "Enable Spotify Tool", true, true, 0, true, 1)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
-		stoolEnabled = cvar.getBoolValue();
-			});
+			stoolEnabled = cvar.getBoolValue();
+		});
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
 }
 
@@ -101,8 +96,7 @@ void SpotifyTool::onUnload() {
 	if (pauseHotkeyCVar) {
 		std::string bind_pause = pauseHotkeyCVar.getStringValue();
 		cvarManager->removeBind(bind_pause);
-	}
-	
+	}	
 	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 	json data = json::parse(f);
 	f.close();
@@ -289,7 +283,6 @@ void SpotifyTool::Skip_song() {
 		});
 }
 
-/* A EDITER */
 void SpotifyTool::Prev_song() {
 	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 	json data = json::parse(f);
@@ -359,8 +352,6 @@ void SpotifyTool::Pause_song() {
 		});
 }
 
-/* FIN A EDITER*/
-
 // Name of the plugin to be shown on the f2 -> plugins list
 std::string SpotifyTool::GetPluginName()
 {
@@ -384,24 +375,28 @@ void SpotifyTool::RenderSettings() {
 	if (ImGui::Button("Sync Spotify")) {
 		Sync_spotify();
 	}
-	ImGui::Checkbox("Drag Mode", &moveOverlay);
-
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Sync your activity");
 	}
-
+	ImGui::Checkbox("Drag Mode", &moveOverlay);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Enable drag mode for the widget");
+	}
+	ImGui::Checkbox("Snapping mode", &snappingMode);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Toggle the snapping mode");
+	}
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
 	if (enableCvar) {
 		enabled = enableCvar.getBoolValue();
 	}
-
 	if (ImGui::Checkbox("Enable plugin", &enabled)) {
 		enableCvar.setValue(enabled);
 	}
 	if (ImGui::IsItemHovered()) {
 		ImGui::SetTooltip("Toggle SpotifyTool Plugin");
-	}
+	}	
 	cvarManager->removeBind(keybinds[next_keybind_index]);
 	cvarManager->removeBind(keybinds[previous_keybind_index]);
 	cvarManager->removeBind(keybinds[pause_keybind_index]);
@@ -423,19 +418,8 @@ void SpotifyTool::RenderSettings() {
 	if (pauseEnableCVar) {
 		pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
 	}
-
-	CVarWrapper xLocCvar = cvarManager->getCvar("stool_x_location");
-	if (!xLocCvar) { return; }
-	float xLoc = xLocCvar.getFloatValue();
-	if (ImGui::SliderFloat("Text X Location", &xLoc, 0.0, 1920)) {
-		xLocCvar.setValue(xLoc);
-	}
-	CVarWrapper yLocCvar = cvarManager->getCvar("stool_y_location");
-	if (!yLocCvar) { return; }
-	float yLoc = yLocCvar.getFloatValue();
-	if (ImGui::SliderFloat("Text Y Location", &yLoc, 0.0, 1080)) {
-		yLocCvar.setValue(yLoc);
-	}
+	ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
+	ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
 }
 
 void SpotifyTool::SetImGuiContext(uintptr_t ctx)
@@ -473,12 +457,7 @@ void SpotifyTool::Render() {
 			ImGui::PushFont(myFont);
 		}
 		ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
-			| ImGuiWindowFlags_NoFocusOnAppearing;
-
-		if (!moveOverlay)
-		{
-			WindowFlags |= ImGuiWindowFlags_NoInputs;
-		}
+			| ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoInputs;
 
 		// uncomment if you don't want a background (flag found by just checking for the other window flags available
 		//WindowFlags |= ImGuiWindowFlags_NoBackground;
@@ -513,6 +492,16 @@ void SpotifyTool::Render() {
 		{
 			ImGui::Text("The custom font haven't been loaded yet");
 		}
+		ImGuiWindow* window = ImGui::FindWindowByName(GetMenuTitle().c_str());
+		if (moveOverlay) {
+			DragWidget(window);
+		}
+		if (window->Pos.x > screenSizeX - window->Size.x) {
+			window->Pos.x = screenSizeX - window->Size.x;
+		}
+		if (window->Pos.y > screenSizeY - window->Size.y) {
+			window->Pos.y = screenSizeY - window->Size.y;
+		}
 		if (doOnce) {
 			duration_ms = data.value("duration", 0);
 			progress_ms = data.value("progress", 0);
@@ -546,7 +535,6 @@ void SpotifyTool::Render() {
 			skip_delay = 0;
 		}
 	}
-
 	else
 	{
 		return;
@@ -559,22 +547,34 @@ void SpotifyTool::Render() {
 	ImGui::End();
 }
 
-void SpotifyTool::DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar) {
-	ImGui::Checkbox("Drag Mode", &inDragMode);
-
-	if (inDragMode) {
-		if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered()) {
-			// doesn't do anything if any ImGui is hovered over
-			return;
+void SpotifyTool::DragWidget(ImGuiWindow* window) {
+	if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemHovered()) {
+		// doesn't do anything if any ImGui is hovered over
+		return;
+	}
+	// drag cursor w/ arrows to N, E, S, W
+	ImGui::SetMouseCursor(2);
+	if (ImGui::IsMouseDown(0)) {
+		// if holding left click, move
+		// sets location to current mouse position
+		ImVec2 mousePos = ImGui::GetMousePos();
+		if (snappingMode) {
+			if ((mousePos.x - (mousePos.x / snapping_grid_size_x) * snapping_grid_size_x == 0) && (mousePos.x >= 0 && mousePos.x <= screenSizeX - window->Size.x)) {
+				window->Pos.x = snapping_grid_size_x * floor(mousePos.x / snapping_grid_size_x);
+			}
+			if (snapping_grid_size_x * ceil(mousePos.x / snapping_grid_size_x) > screenSizeX - window->Size.x) {
+				window->Pos.x = screenSizeX - window->Size.x;
+			}
+			if (mousePos.y - (mousePos.y / snapping_grid_size_y) * snapping_grid_size_y == 0 && (mousePos.y >= 0 && mousePos.y <= screenSizeY - window->Size.y)) {
+				window->Pos.y = snapping_grid_size_y * floor(mousePos.y / snapping_grid_size_y);
+			}
+			if (snapping_grid_size_y * ceil(mousePos.y / snapping_grid_size_y) > screenSizeY - window->Size.y) {
+				window->Pos.y = screenSizeY - window->Size.y;
+			}
 		}
-		// drag cursor w/ arrows to N, E, S, W
-		ImGui::SetMouseCursor(2);
-		if (ImGui::IsMouseDown(0)) {
-			// if holding left click, move
-			// sets location to current mouse position
-			ImVec2 mousePos = ImGui::GetMousePos();
-			xLocCvar.setValue(mousePos.x);
-			yLocCvar.setValue(mousePos.y);
+		else {
+			window->Pos.x = clamp(mousePos.x, (float)0.0, screenSizeX - window->Size.x);
+			window->Pos.y = clamp(mousePos.y, (float)0.0, screenSizeY - window->Size.y);
 		}
 	}
 }

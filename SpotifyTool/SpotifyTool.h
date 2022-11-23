@@ -4,6 +4,7 @@
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "version.h"
+#include "IMGUI/imgui_internal.h"
 #include <fstream>
 
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -16,11 +17,15 @@ private:
     std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, song, currently_playing;
     bool setup_statut = false;
     bool paused = false;
-    bool stoolEnabled = true;
+    int snapping_grid_size_x = 100;
+    int snapping_grid_size_y = 100;
+    int screenSizeX = 1920;
+    int screenSizeY = 1080;
     bool moveOverlay = false;
+    bool snappingMode = false;
+    bool stoolEnabled = true;
     int duration_ms, duration, progress, progress_ms;
     bool song_sync = true;
-    bool inDragMode = false;
     bool doOnce = true;
     bool skipped = true;
     float counter, token_denied, song_duration, skip_delay;
@@ -85,7 +90,7 @@ private:
     virtual void onLoad();
     virtual void onUnload();
     void SetImGuiContext(uintptr_t ctx) override;
-    void DragWidget(CVarWrapper xLocCvar, CVarWrapper yLocCvar);
+    void DragWidget(ImGuiWindow* window);
     void RenderSettings() override;
     void Render() override;
     void Sync_spotify();
