@@ -406,6 +406,10 @@ void SpotifyTool::RenderSettings() {
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Enable drag mode for the widget");
 		}
+		ImGui::Checkbox("Force snapping to right", &keepRight);
+		if (ImGui::IsItemHovered()) {
+			ImGui::SetTooltip("Force the widget to snap to right");
+		}
 		if (moveOverlay) {
 			ImGui::Checkbox("Snapping mode", &snappingMode);
 			if (ImGui::IsItemHovered()) {
@@ -414,10 +418,6 @@ void SpotifyTool::RenderSettings() {
 			if (snappingMode) {
 				ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
 				ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
-				ImGui::Checkbox("Force snapping to right", &keepRight);
-				if (ImGui::IsItemHovered()) {
-					ImGui::SetTooltip("Force the widget to snap to right");
-				}
 			}
 		}
 		ImGui::SliderInt("Text color R", &text_color_r, 0, 255);
