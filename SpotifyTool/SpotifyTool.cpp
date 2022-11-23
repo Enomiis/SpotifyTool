@@ -46,7 +46,6 @@ void SpotifyTool::onLoad()
 		}, "", PERMISSION_ALL);
 	Setup_spotify();
 	Refresh_token();
-	Sync_spotify();
 	cvarManager->registerCvar(NEXT_HOTKEY, NEXT_KEYBIND, "Next song Hotkey", false)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {});
 	cvarManager->registerNotifier(
@@ -75,8 +74,8 @@ void SpotifyTool::onLoad()
 	gameWrapper->Toast("SpotifyTool", "SpotifyTool is loaded", "spotifytool_logo", 5.0, ToastType_Warning);
 	cvarManager->registerCvar("stool_enabled", "1", "Enable Spotify Tool", true, true, 0, true, 1)
 		.addOnValueChanged([this](std::string oldValue, CVarWrapper cvar) {
-			stoolEnabled = cvar.getBoolValue();
-		});
+		stoolEnabled = cvar.getBoolValue();
+			});
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
 }
 
@@ -96,7 +95,7 @@ void SpotifyTool::onUnload() {
 	if (pauseHotkeyCVar) {
 		std::string bind_pause = pauseHotkeyCVar.getStringValue();
 		cvarManager->removeBind(bind_pause);
-	}	
+	}
 	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 	json data = json::parse(f);
 	f.close();
@@ -126,25 +125,25 @@ void SpotifyTool::Setup_spotify() {
 		req.body = "redirect_uri=http%3A%2F%2Flocalhost%3A8888%2Fauth%2Fspotify%2Fcallback&grant_type=authorization_code&code=" + code_spotify;
 		LOG("sending body request");
 		HttpWrapper::SendCurlRequest(req, [this](int response_code, std::string result)
-		{
-			if (response_code == 200) {
-				json token_complete = json::parse(result.begin(), result.end());
-				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
-				json data = json::parse(f);
-				f.close();
-				refresh_token = token_complete["refresh_token"];
-				access_token = token_complete["access_token"];
-				data["access_token"] = access_token;
-				data["refresh_token"] = refresh_token;
-				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
-				file << data;
-				file.close();
-				LOG("Setup completed with success!");
-			}
-			else {
-				LOG("Problem with setup... Error code {}, got {} as a result", response_code, result);
-			}
-		});
+			{
+				if (response_code == 200) {
+					json token_complete = json::parse(result.begin(), result.end());
+					std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+					json data = json::parse(f);
+					f.close();
+					refresh_token = token_complete["refresh_token"];
+					access_token = token_complete["access_token"];
+					data["access_token"] = access_token;
+					data["refresh_token"] = refresh_token;
+					std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+					file << data;
+					file.close();
+					LOG("Setup completed with success!");
+				}
+				else {
+					LOG("Problem with setup... Error code {}, got {} as a result", response_code, result);
+				}
+			});
 		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 		json data = json::parse(f);
 		f.close();
@@ -210,6 +209,7 @@ void SpotifyTool::Sync_spotify() {
 				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 				file << data;
 				file.close();
+				doOnce = true;
 			}
 			else {
 				LOG("ERROR IN Sync_spotify with response code {}", response_code);
@@ -386,6 +386,15 @@ void SpotifyTool::RenderSettings() {
 	if (!enabled) {
 		return;
 	}
+	CVarWrapper search_song = cvarManager->getCvar("stool_ssong"); 
+	bool stool_ssong = false; // Search song button value
+	static char query_song[128] = "";
+	ImGui::InputText("", query_song, IM_ARRAYSIZE(query_song));
+	ImGui::SameLine();
+	if (ImGui::Button("Search")) {
+		ImGui::SetTooltip("Search a song here");
+	}
+	
 	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
 		if (ImGui::Button("Sync Spotify")) {
 			Sync_spotify();
@@ -455,7 +464,6 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 
 void SpotifyTool::Render() {
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
-
 	if (!enableCvar) {
 		if (myFont) {
 			ImGui::PopFont();
@@ -498,7 +506,7 @@ void SpotifyTool::Render() {
 			ImGui::SameLine();
 			ImGui::BeginGroup();
 			ImVec4 color(text_color_r / 255.0, text_color_g / 255.0, text_color_b / 255.0, 1.0);
-			ImGui::TextColored(color,("%s", data.value("song", "").c_str()));
+			ImGui::TextColored(color, ("%s", data.value("song", "").c_str()));
 			ImGui::TextColored(color, ("%s", data.value("artist", "").c_str()));
 		}
 		else
@@ -522,8 +530,9 @@ void SpotifyTool::Render() {
 		if (doOnce) {
 			duration_ms = data.value("duration", 0);
 			progress_ms = data.value("progress", 0);
-			song_duration = ((duration_ms - progress_ms) / 1000) + 1;
+			song_duration = ((duration_ms - progress_ms) / 1000) + 3;
 			doOnce = false;
+			counter = 0;
 		}
 		if (!paused) {
 			counter += ImGui::GetIO().DeltaTime;
@@ -532,7 +541,6 @@ void SpotifyTool::Render() {
 		if (skipped) {
 			skip_delay += ImGui::GetIO().DeltaTime;
 		}
-
 		if (token_denied > 3500)
 		{
 			Refresh_token();
