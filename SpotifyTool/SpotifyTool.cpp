@@ -119,11 +119,10 @@ void SpotifyTool::RenderSettings() {
 		"XboxTypeS_LeftThumbStick", "XboxTypeS_RightThumbStick", "XboxTypeS_DPad_Up", "XboxTypeS_DPad_Left", "XboxTypeS_DPad_Right",  "XboxTypeS_DPad_Down",
 		"XboxTypeS_LeftX", "XboxTypeS_LeftY", "XboxTypeS_RightX", "XboxTypeS_RightY", "XboxTypeS_X", "XboxTypeS_Y", "XboxTypeS_A", "XboxTypeS_A",
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
-
+	ImGui::GetIO().WantCaptureMouse = true;
 	static int pause_keybind_index = 43;
 	static int previous_keybind_index = 58;
 	static int next_keybind_index = 61;
-
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
