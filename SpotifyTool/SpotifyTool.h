@@ -32,6 +32,8 @@ private:
     bool song_sync = true;
     bool doOnce = true;
     bool skipped = true;
+    bool stool_free = false;
+    bool stool_ssong = false;
     float counter, token_denied, song_duration, skip_delay;
     ImFont* myFont;
     bool isWindowOpen_ = false;
