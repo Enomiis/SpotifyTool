@@ -14,7 +14,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginWindow
 {
 private:
-    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, song, currently_playing;
+    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, song, currently_playing, searched;
     bool setup_statut = false;
     bool paused = false;
     int snapping_grid_size_x = 100;
@@ -38,6 +38,7 @@ private:
     ImFont* myFont;
     bool isWindowOpen_ = false;
     bool isMinimized_ = false;
+    bool search_type = true;
     ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoFocusOnAppearing;
     class ImageLinkWrapper
@@ -105,6 +106,8 @@ private:
     void Skip_song();
     void Prev_song();
     void Pause_song();
+    void Search_spotify(std::string query, std::string amount);
+    void Display_card();
     std::string GetPluginName();
     std::string GetMenuName();
     std::string GetMenuTitle();

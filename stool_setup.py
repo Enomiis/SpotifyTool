@@ -1,9 +1,15 @@
 import requests
 import pyautogui
+import pyperclip
 import json
 import os
 import webbrowser
 import time
+
+def typewrite(text):
+    pyperclip.copy(text)
+    pyautogui.hotkey('ctrl', 'v')
+    pyperclip.copy('')
 
 bakkesmod_directory = input("Directory to BakkesMod folder? ")
 web_browser = input("Which web browser are you using? ")
@@ -27,7 +33,7 @@ pyautogui.keyUp('j')
 pyautogui.keyUp('shift')
 pyautogui.keyUp('ctrl')
 time.sleep(2)
-pyautogui.write("document.title=pageData.reloadButton.reloadUrl")
+typewrite('document.title=pageData.reloadButton.reloadUrl.split("code=")[1]')
 pyautogui.press("enter")
 time.sleep(2)
 pyautogui.keyDown("ctrl")
@@ -40,7 +46,7 @@ url_containing_code = (str(os.popen("tasklist /v /fi \"IMAGENAME eq " + str(web_
 pyautogui.keyDown('ctrl')
 pyautogui.press('w')
 pyautogui.keyUp('ctrl')
-code = url_containing_code.split("code=")[-1]
+code = url_containing_code.split(": ")[-1]
 default_config = {
     "access_token":"",
     "artist":"",

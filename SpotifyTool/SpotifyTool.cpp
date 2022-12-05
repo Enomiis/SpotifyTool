@@ -145,11 +145,7 @@ void SpotifyTool::RenderSettings() {
 	ImGui::SameLine();
 	if (ImGui::Button("Search")) {
 		ImGui::SetTooltip("Search a song here");
-		stool_ssong = true;
-	}
-	if (stool_ssong) {
-		// func search song: int Search_song() returning number of found songs
-		// func in for loop: Print_song(int max_index)
+		Search_spotify(query_song, std::to_string(1));
 	}
 	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
 		if (ImGui::Button("Sync Spotify")) {
@@ -159,7 +155,7 @@ void SpotifyTool::RenderSettings() {
 			ImGui::SetTooltip("Sync your activity");
 		}
 		ImGui::Checkbox("Using non-premium Spotify", &stool_free);
-		
+
 		ImGui::Checkbox("Drag Mode", &moveOverlay);
 		if (ImGui::IsItemHovered()) {
 			ImGui::SetTooltip("Enable drag mode for the widget");
@@ -650,3 +646,47 @@ void SpotifyTool::Pause_song() {
 			}
 		});
 }
+void SpotifyTool::Search_spotify(std::string query, std::string amount) {
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_search;
+	if (search_type){
+		req_search.url = "https://api.spotify.com/v1/search?q=" + query + "&type=track&limit=" + amount;
+	}
+	else{
+	req_search.url = "https://api.spotify.com/v1/search?q=" + query + "&type=playlist&limit=" + amount;
+	}
+	req_search.verb = "GET";
+	req_search.headers = {
+		{"Authorization", auth_bearer},
+		{"Content-Type", "application/json"}
+	};
+	HttpWrapper::SendCurlRequest(req_search, [this](int response_code, std::string result_search)
+		{
+			LOG("Request_result\n{}", response_code);
+			if (response_code == 200) {
+				LOG("Search result\n{}", result_search);
+				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				json data = json::parse(f);
+				f.close();
+				json complete_data = json::parse(result_search.begin(), result_search.end());
+				searched = complete_data["tracks"]["items"][0]["uri"];
+				data["searched"] = searched;
+				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+				file << data;
+				file.close();
+			}
+			else {
+				LOG("Request Problem in Search_spotify {}, got {}, please contact the creator with this code", response_code, result_search);
+			}
+		});
+}
+/*
+void SpotifyTool::Display_card() {
+
+}
+*/
