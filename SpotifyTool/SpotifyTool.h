@@ -39,6 +39,7 @@ private:
     bool isWindowOpen_ = false;
     bool isMinimized_ = false;
     bool search_type = true;
+    std::list<std::string> uri_list;
     ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoFocusOnAppearing;
     class ImageLinkWrapper
@@ -106,7 +107,7 @@ private:
     void Skip_song();
     void Prev_song();
     void Pause_song();
-    void Search_spotify(std::string query, std::string amount);
+    void Search_spotify(std::string query, int amount);
     void Display_card();
     std::string GetPluginName();
     std::string GetMenuName();
