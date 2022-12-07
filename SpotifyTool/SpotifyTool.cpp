@@ -139,13 +139,22 @@ void SpotifyTool::RenderSettings() {
 		return;
 	}
 	CVarWrapper search_song = cvarManager->getCvar("stool_ssong");
-	// Search song button value
+	// Search song search query
 	static char query_song[128] = "";
 	ImGui::InputText("", query_song, IM_ARRAYSIZE(query_song));
 	ImGui::SameLine();
 	if (ImGui::Button("Search")) {
 		ImGui::SetTooltip("Search a song here");
-		Search_spotify(query_song,1);
+		int amount = 10;
+		Search_spotify(query_song,amount);
+		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+		json data = json::parse(f);
+		f.close();
+		data["searched"] = uri_list;
+		for (int i = 0; i < amount; ++i)
+		{
+			ImGui::Text(i.c_str());
+		}
 	}
 	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
 		if (ImGui::Button("Sync Spotify")) {
