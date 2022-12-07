@@ -150,11 +150,6 @@ void SpotifyTool::RenderSettings() {
 		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 		json data = json::parse(f);
 		f.close();
-		data["searched"] = uri_list;
-		for (int i = 0; i < amount; ++i)
-		{
-			ImGui::Text(i.c_str());
-		}
 	}
 	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
 		if (ImGui::Button("Sync Spotify")) {
@@ -230,6 +225,10 @@ void SpotifyTool::SetImGuiContext(uintptr_t ctx)
 }
 
 void SpotifyTool::Render() {
+	if (!myFont) {
+		auto gui = gameWrapper->GetGUIManager();
+		myFont = gui.GetFont("SpotifyToolFont");
+	}
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	if (!enableCvar) {
 		if (myFont) {
