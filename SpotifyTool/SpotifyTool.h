@@ -19,15 +19,16 @@ private:
     bool paused = false;
     int snapping_grid_size_x = 100;
     int snapping_grid_size_y = 100;
-    int text_color_r = 255;
-    int text_color_g = 255;
-    int text_color_b = 255;
     int screenSizeX = 1920;
     int screenSizeY = 1080;
     bool moveOverlay = false;
     bool snappingMode = false;
     bool keepRight = false;
     bool stoolEnabled = true;
+    bool skiptosong = false;
+    int text_color_r = 255;
+    int text_color_g = 255;
+    int text_color_b = 255;
     int duration_ms, duration, progress, progress_ms;
     bool song_sync = true;
     bool doOnce = true;
@@ -108,7 +109,7 @@ private:
     void Prev_song();
     void Pause_song();
     void Search_spotify(std::string query, int amount);
-    void Display_card();
+    void Queue_song();
     std::string GetPluginName();
     std::string GetMenuName();
     std::string GetMenuTitle();

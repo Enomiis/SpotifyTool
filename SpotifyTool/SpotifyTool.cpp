@@ -114,15 +114,16 @@ std::string SpotifyTool::GetPluginName()
 
 #pragma region Rendering
 void SpotifyTool::RenderSettings() {
-	const char* keybinds[] = { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero", "F1", "F3", "F4", "F5", "F7", "F8", "F9", "F11", "F12",
+	const char* keybinds[] = { "None","One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero", "F1", "F3", "F4", "F5", "F7", "F8", "F9", "F11", "F12",
 		"NumPadOne", "NumPadTwo", "NumPadThree", "NumPadFour", "NumPadFive", "NumPadSix", "NumPadSeven", "NumPadEight", "NumPadNine", "NumPadZero",
 		"XboxTypeS_LeftThumbStick", "XboxTypeS_RightThumbStick", "XboxTypeS_DPad_Up", "XboxTypeS_DPad_Left", "XboxTypeS_DPad_Right",  "XboxTypeS_DPad_Down",
 		"XboxTypeS_LeftX", "XboxTypeS_LeftY", "XboxTypeS_RightX", "XboxTypeS_RightY", "XboxTypeS_X", "XboxTypeS_Y", "XboxTypeS_A", "XboxTypeS_A",
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
 	ImGui::GetIO().WantCaptureMouse = true;
-	static int pause_keybind_index = 43;
-	static int previous_keybind_index = 58;
-	static int next_keybind_index = 61;
+	ImGui::GetIO().WantCaptureKeyboard = true;
+	static int pause_keybind_index = 44;
+	static int previous_keybind_index = 59;
+	static int next_keybind_index = 62;
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
@@ -138,70 +139,77 @@ void SpotifyTool::RenderSettings() {
 	if (!enabled) {
 		return;
 	}
+
 	CVarWrapper search_song = cvarManager->getCvar("stool_ssong");
-	// Search song search query
+	// Search song query
 	static char query_song[128] = "";
 	ImGui::InputText("", query_song, IM_ARRAYSIZE(query_song));
 	ImGui::SameLine();
 	if (ImGui::Button("Search")) {
 		ImGui::SetTooltip("Search a song here");
-		int amount = 10;
+		int amount = 1;
 		Search_spotify(query_song,amount);
-		std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
-		json data = json::parse(f);
-		f.close();
+		Queue_song();
+		if (skiptosong) {
+			gameWrapper->SetTimeout([this](GameWrapper* gameWrapper) {
+				Skip_song();
+				}, 1); 
+		}
 	}
-	if (ImGui::CollapsingHeader("Settings", ImGuiTreeNodeFlags_None)) {
-		if (ImGui::Button("Sync Spotify")) {
-			Sync_spotify();
-		}
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Sync your activity");
-		}
-		ImGui::Checkbox("Using non-premium Spotify", &stool_free);
+	ImGui::Separator();
+	if (ImGui::Button("Sync Spotify")) {
+		Sync_spotify();
+	}
+	ImGui::Checkbox("Play the search song", &skiptosong);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Force the widget to snap to right");
+	}
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Sync your activity");
+	}
+	ImGui::Checkbox("Using non-premium Spotify", &stool_free);
 
-		ImGui::Checkbox("Drag Mode", &moveOverlay);
+	ImGui::Checkbox("Drag Mode", &moveOverlay);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Enable drag mode for the widget");
+	}
+	ImGui::Checkbox("Force snapping to right", &keepRight);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Force the widget to snap to right");
+	}
+	if (moveOverlay) {
+		ImGui::Checkbox("Snapping mode", &snappingMode);
 		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Enable drag mode for the widget");
+			ImGui::SetTooltip("Toggle the snapping mode");
 		}
-		ImGui::Checkbox("Force snapping to right", &keepRight);
-		if (ImGui::IsItemHovered()) {
-			ImGui::SetTooltip("Force the widget to snap to right");
+		if (snappingMode) {
+			ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
+			ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
 		}
-		if (moveOverlay) {
-			ImGui::Checkbox("Snapping mode", &snappingMode);
-			if (ImGui::IsItemHovered()) {
-				ImGui::SetTooltip("Toggle the snapping mode");
-			}
-			if (snappingMode) {
-				ImGui::SliderInt("Snapping Grid Size X", &snapping_grid_size_x, 0, screenSizeX);
-				ImGui::SliderInt("Snapping Grid Size Y", &snapping_grid_size_y, 0, screenSizeY);
-			}
-		}
-		ImGui::SliderInt("Text color R", &text_color_r, 0, 255);
-		ImGui::SliderInt("Text color G", &text_color_g, 0, 255);
-		ImGui::SliderInt("Text color B", &text_color_b, 0, 255);
-		cvarManager->removeBind(keybinds[next_keybind_index]);
-		cvarManager->removeBind(keybinds[previous_keybind_index]);
-		cvarManager->removeBind(keybinds[pause_keybind_index]);
-		ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-		ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-		ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-		cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
-		cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
-		cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
-		CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
-		CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
-		CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
-		if (skipEnableCVar) {
-			skipEnableCVar.setValue(keybinds[next_keybind_index]);
-		}
-		if (previousEnableCVar) {
-			previousEnableCVar.setValue(keybinds[previous_keybind_index]);
-		}
-		if (pauseEnableCVar) {
-			pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
-		}
+	}
+	ImGui::SliderInt("Text color R", &text_color_r, 0, 255);
+	ImGui::SliderInt("Text color G", &text_color_g, 0, 255);
+	ImGui::SliderInt("Text color B", &text_color_b, 0, 255);
+	cvarManager->removeBind(keybinds[next_keybind_index]);
+	cvarManager->removeBind(keybinds[previous_keybind_index]);
+	cvarManager->removeBind(keybinds[pause_keybind_index]);
+	ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
+	cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
+	cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
+	cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
+	CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
+	CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
+	CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
+	if (skipEnableCVar) {
+		skipEnableCVar.setValue(keybinds[next_keybind_index]);
+	}
+	if (previousEnableCVar) {
+		previousEnableCVar.setValue(keybinds[previous_keybind_index]);
+	}
+	if (pauseEnableCVar) {
+		pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
 	}
 }
 
@@ -488,7 +496,7 @@ void SpotifyTool::Sync_spotify() {
 				f.close();
 				json playing_json = json::parse(currently_playing);
 				song = playing_json["item"]["name"];
-				LOG("Song{}\n", song);
+				LOG("Song\n{}", song);
 				artist = playing_json["item"]["artists"][0]["name"];
 				picture = playing_json["item"]["album"]["images"][0]["url"];
 				duration = playing_json["item"]["duration_ms"];
@@ -684,15 +692,18 @@ void SpotifyTool::Search_spotify(std::string query, int amount) {
 				json data = json::parse(f);
 				f.close();
 				json complete_data = json::parse(result_search.begin(), result_search.end());
-
-				int offset = search_type ? 14 : 17;
+				std::string trackId = complete_data["tracks"]["items"][0]["uri"];
+				
+				/*
 				for (int i = 0; i < amount; ++i)
 				{
 					std::string trackId = complete_data["tracks"]["items"][i]["uri"];
-					uri_list.push_back(trackId.substr(offset));
+					uri_list.push_back(trackId);
 				}
-
 				data["searched"] = uri_list;
+				*/
+
+				data["searched"] = trackId;
 				std::ofstream file(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 				file << data;
 				file.close();
@@ -702,8 +713,30 @@ void SpotifyTool::Search_spotify(std::string query, int amount) {
 			}
 		});
 }
-/*
-void SpotifyTool::Display_card() {
-
+void SpotifyTool::Queue_song() {
+	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
+	json data = json::parse(f);
+	f.close();
+	access_token = data.value("access_token", "");
+	std::string track_uri = data.value("searched", "");
+	auth = "Bearer ";
+	auth_bearer = auth + access_token;
+	CurlRequest req_queue;
+	req_queue.url = "https://api.spotify.com/v1/me/player/queue?uri="+ track_uri;
+	req_queue.verb = "POST";
+	req_queue.headers = {
+		{"Authorization", auth_bearer},
+		{"Content-Length", "0"},
+		{"Content-Type", "application/json"}
+	};
+	HttpWrapper::SendCurlRequest(req_queue, [this](int response_code, std::string result_queue)
+		{
+			LOG("Request_result\n{}", response_code);
+			if (response_code == 200 or response_code == 204) {
+				LOG("Song queued");
+			}
+			else {
+				LOG("Request Problem in Queue song {}, got {}, please contact the creator with this code", response_code, result_queue);
+			}
+		});
 }
-*/
