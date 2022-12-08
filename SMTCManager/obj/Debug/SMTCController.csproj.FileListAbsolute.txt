@@ -1,0 +1,8 @@
+C:\Users\DUFEU\source\repos\Test\SMTCController\bin\Debug\SMTCController.dll
+C:\Users\DUFEU\source\repos\Test\SMTCController\bin\Debug\SMTCController.pdb
+C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Debug\SMTCController.csproj.AssemblyReference.cache
+C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Debug\SMTCController.csproj.CoreCompileInputs.cache
+C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Debug\SMTCController.dll
+C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Debug\SMTCController.pdb
+C:\Users\DUFEU\source\repos\Test\SMTCController\bin\Debug\Windows.winmd
+C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Debug\SMTCController.csproj.CopyComplete
