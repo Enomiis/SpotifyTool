@@ -3,7 +3,6 @@ using System.IO;
 using Windows.Media.Control;
 using System.Drawing;
 using Windows.Media;
-using Windows.Perception.Spatial.Preview;
 
 namespace SMTCManager
 {
@@ -25,12 +24,20 @@ namespace SMTCManager
         public bool HasThumbnail { get => this.hasThumbnail;  }
         public bool HasSession { get => this.currSession != null;  }
 
-        private const string LOGFILE_PATH = @".\smtc-log.txt";
+        private const string LOGFILE_PATH = @"C:\Users\Utilisateur\Desktop\smtc-log.txt";
         private const string THUMBNAIL_PATH = @".\smtc-thumbnail.png";
+
+        static private SMTCManager Instance = null;
 
         public SMTCManager()
         {
-            Log("SMTCController - Starting...");
+            Log("SMTCManager - Starting...");
+        }
+
+        public static ref SMTCManager GetInstance()
+        {
+            if (Instance == null) Instance = new SMTCManager();
+            return ref Instance;
         }
 
         public bool Init()
@@ -126,22 +133,30 @@ namespace SMTCManager
             var task = this.currSession.TryGetMediaPropertiesAsync().AsTask();
             task.Wait();
             var mediaProp = task.Result;
-
-            switch (mediaProp.PlaybackType.Value)
+            
+            try
             {
-                case MediaPlaybackType.Music:
-                    this.mediaType = "MUSIC";
-                    break;
-                case MediaPlaybackType.Video:
-                    this.mediaType = "VIDEO";
-                    break;
-                case MediaPlaybackType.Image:
-                    this.mediaType = "IMAGE";
-                    break;
-                default:
-                    this.mediaType = "UNKNOWN";
-                    break;
+                switch (mediaProp?.PlaybackType.Value)
+                {
+                    case MediaPlaybackType.Music:
+                        this.mediaType = "MUSIC";
+                        break;
+                    case MediaPlaybackType.Video:
+                        this.mediaType = "VIDEO";
+                        break;
+                    case MediaPlaybackType.Image:
+                        this.mediaType = "IMAGE";
+                        break;
+                    default:
+                        this.mediaType = "UNKNOWN";
+                        break;
+                }
             }
+            catch
+            {
+                this.mediaType = "UNKNOWN";
+            }
+
             log_string += $"\tSession Media Type: {this.mediaType}\n";
             
             this.artist = mediaProp.Artist;

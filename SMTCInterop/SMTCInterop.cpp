@@ -1,11 +1,11 @@
 #include "pch.h"
 
-#define EXPORT_SMTC_INTEROP
+#using "SMTCManager.dll"
 #include "SMTCInterop.h"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
-#include <memory>
 
 #include <msclr\marshal_cppstd.h>
 
@@ -14,41 +14,45 @@ using msclr::interop::marshal_as;
 ref class Global
 {
 public:
-	static SMTCManager::SMTCManager manager;
+	static SMTCManager::SMTCManager ^manager = SMTCManager::SMTCManager::GetInstance();
 };
 
-
-SMTC_MANAGER_API bool SMTCManager::Initialize()
+void SMTCManager::test()
 {
-	return Global::manager.Init();
+	
+}
+
+bool SMTCManager::Initialize()
+{
+	return Global::manager->Init();
 }
 
 
-SMTC_MANAGER_API bool SMTCManager::HasSession() { return Global::manager.HasSession; }
+bool SMTCManager::HasSession() { return Global::manager->HasSession; }
 
-SMTC_MANAGER_API std::string SMTCManager::GetMediaType() { return marshal_as<std::string>(Global::manager.MediaType); }
+std::string SMTCManager::GetMediaType() { return marshal_as<std::string>(Global::manager->MediaType); }
 
-SMTC_MANAGER_API std::string SMTCManager::GetArtist() { return marshal_as<std::string>(Global::manager.Artist); }
+std::string SMTCManager::GetArtist() { return marshal_as<std::string>(Global::manager->Artist); }
 
-SMTC_MANAGER_API std::string SMTCManager::GetTitle() { return marshal_as<std::string>(Global::manager.Title); }
+std::string SMTCManager::GetTitle() { return marshal_as<std::string>(Global::manager->Title); }
 
-SMTC_MANAGER_API std::string SMTCManager::GetSubtitle() { return marshal_as<std::string>(Global::manager.Subtitle); }
+std::string SMTCManager::GetSubtitle() { return marshal_as<std::string>(Global::manager->Subtitle); }
 
-SMTC_MANAGER_API bool SMTCManager::HasThumbnail() { return Global::manager.HasThumbnail; }
-
-
-SMTC_MANAGER_API void SMTCManager::SkipToNext() { Global::manager.SkipToNext(); }
-
-SMTC_MANAGER_API void SMTCManager::SkipToPrevious() { Global::manager.SkipToPrevious(); }
-
-SMTC_MANAGER_API void SMTCManager::Play() { Global::manager.Play(); }
-
-SMTC_MANAGER_API void SMTCManager::Pause() { Global::manager.Pause(); }
-
-SMTC_MANAGER_API void SMTCManager::TogglePausePlay() { Global::manager.TogglePausePlay(); }
+bool SMTCManager::HasThumbnail() { return Global::manager->HasThumbnail; }
 
 
-SMTC_MANAGER_API void SMTCManager::Log(std::string text)
+void SMTCManager::SkipToNext() { Global::manager->SkipToNext(); }
+
+void SMTCManager::SkipToPrevious() { Global::manager->SkipToPrevious(); }
+
+void SMTCManager::Play() { Global::manager->Play(); }
+
+void SMTCManager::Pause() { Global::manager->Pause(); }
+
+void SMTCManager::TogglePausePlay() { Global::manager->TogglePausePlay(); }
+
+
+void SMTCManager::Log(std::string text)
 {
-	if (Global::manager.Initialized) Global::manager.Log(marshal_as<System::String^>(text));
+	if (Global::manager->Initialized) Global::manager->Log(marshal_as<System::String^>(text));
 }

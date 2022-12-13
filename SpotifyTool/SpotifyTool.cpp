@@ -8,6 +8,8 @@
 #include "bakkesmod/wrappers/GuiManagerWrapper.h"
 #include "IMGUI/imgui_internal.h"
 
+#include "..\SMTCInterop\SMTCInterop.h"
+
 /*
 TO DO LIST:
  Fix CURL (DONE)
@@ -77,6 +79,8 @@ void SpotifyTool::onLoad()
 		stoolEnabled = cvar.getBoolValue();
 			});
 	cvarManager->registerCvar("stool_color", "#FFFFFF", "color of overlay");
+
+	SMTCManager::test();
 }
 
 void SpotifyTool::onUnload() {
@@ -121,9 +125,9 @@ void SpotifyTool::RenderSettings() {
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z" };
 	ImGui::GetIO().WantCaptureMouse = true;
 	ImGui::GetIO().WantCaptureKeyboard = true;
-	static int pause_keybind_index = 44;
-	static int previous_keybind_index = 59;
-	static int next_keybind_index = 62;
+	static int pause_keybind_index = 0;
+	static int previous_keybind_index = 0;
+	static int next_keybind_index = 0;
 	ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
 	CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
 	bool enabled = false;
@@ -646,6 +650,17 @@ void SpotifyTool::Pause_song() {
 		{"Content-Length", "0"},
 		{"Content-Type", "application/json"}
 	};
+
+	static bool init = false;
+	if (!init)
+	{
+		init = SMTCManager::Initialize();
+	}
+
+	if (init)
+		SMTCManager::TogglePausePlay();
+
+	/*
 	HttpWrapper::SendCurlRequest(req_prev, [this](int response_code, std::string result_skip)
 		{
 			LOG("Request_result\n{}", response_code);
@@ -661,6 +676,7 @@ void SpotifyTool::Pause_song() {
 				LOG("Request Problem in Pause_song {}, got {}, please contact the creator with this code", response_code, result_skip);
 			}
 		});
+	*/
 }
 void SpotifyTool::Search_spotify(std::string query, int amount) {
 	std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");

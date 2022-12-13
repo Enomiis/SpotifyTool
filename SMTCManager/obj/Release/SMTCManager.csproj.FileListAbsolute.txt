@@ -6,3 +6,13 @@ C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Release\SMTCManager.csproj.C
 C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Release\SMTCManager.csproj.CopyComplete
 C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Release\SMTCController.dll
 C:\Users\DUFEU\source\repos\Test\SMTCController\obj\Release\SMTCController.pdb
+C:\Users\Utilisateur\source\repos\NotreallyEnomis\SpotifyTool\SMTCManager\obj\Release\SMTCManager.csproj.AssemblyReference.cache
+C:\Users\Utilisateur\source\repos\NotreallyEnomis\SpotifyTool\SMTCManager\obj\Release\SMTCManager.csproj.CoreCompileInputs.cache
+C:\Users\Utilisateur\source\repos\NotreallyEnomis\SpotifyTool\SMTCManager\bin\Release\Windows.winmd
+C:\Users\Utilisateur\source\repos\NotreallyEnomis\SpotifyTool\SMTCManager\obj\Release\SMTCManager.csproj.CopyComplete
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\SMTCManager\bin\Release\SMTCManager.dll
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\SMTCManager\bin\Release\SMTCManager.pdb
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\SMTCManager\obj\Release\SMTCManager.dll
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\SMTCManager\obj\Release\SMTCManager.pdb
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\x64\Release\SMTCManager.dll
+C:\Users\Utilisateur\Source\Repos\NotreallyEnomis\SpotifyTool\x64\Release\SMTCManager.pdb
