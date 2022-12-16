@@ -102,6 +102,7 @@ private:
     void DragWidget(ImGuiWindow* window);
     void RenderSettings() override;
     void Render() override;
+    void DebugLog(std::string);
     void Sync_spotify();
     void Setup_spotify();
     void Refresh_token();

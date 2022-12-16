@@ -34,6 +34,23 @@ const std::string NEXT_HOTKEY = "next_hotkey";
 const std::string PREVIOUS_HOTKEY = "previous_hotkey";
 const std::string PAUSE_HOTKEY = "pause_hotkey";
 
+void DebugLog(std::string info) {
+	// Open the file in append mode
+	fstream file("SpotifyTool_log.txt", ios::app);
+
+	// Check if the file was opened successfully
+	if (!file.is_open())
+	{
+		cout << "Error opening file!" << endl;
+	}
+	// Write the text
+	string text = "\n" + info;
+	file.write(text.c_str(), text.length());
+
+	// Close the file
+	file.close();
+}
+
 void SpotifyTool::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -687,7 +704,6 @@ void SpotifyTool::Search_spotify(std::string query, int amount) {
 		{
 			LOG("Request_result\n{}", response_code);
 			if (response_code == 200) {
-				LOG("Search result\n{}", result_search);
 				std::ifstream f(gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\" + "stool_config.json");
 				json data = json::parse(f);
 				f.close();
@@ -740,3 +756,34 @@ void SpotifyTool::Queue_song() {
 			}
 		});
 }
+
+/*
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+void writeToLine(string filename, string text, int lineNumber) {
+  // Open the file in output mode
+  ofstream file(filename, ios::out);
+
+  // If the file couldn't be opened, print an error message and return
+  if (!file.is_open()) {
+	cerr << "Error: Could not open file '" << filename << "' for writing." << endl;
+	return;
+  }
+
+  // Write the text to the specified line in the file
+  for (int i = 1; i <= lineNumber; i++) {
+	if (i == lineNumber) {
+	  file << text << endl;
+	} else {
+	  file << endl;
+	}
+  }
+
+  // Close the file
+  file.close();
+}
+*/
