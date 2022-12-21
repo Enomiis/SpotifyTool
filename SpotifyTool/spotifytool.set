@@ -1,6 +1,6 @@
 ﻿SpotifyTool Plugin
-4|X position|stool_x_location|0|1.0
-4|Y position|stool_y_location|0|1.0
 4|Scale|stool_scale|0|10
 1|Display Song in-game|enableCvar
-1|Hide overlay while in-game|stool_hide_overlay_ig
+4|Previous hotkey|previous_keybind_index|0|70
+4|Pause hotkey|pause_keybind_index|0|70
+4|Skip hotkey|next_keybind_index|0|70
