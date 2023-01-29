@@ -14,7 +14,7 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginWindow
 {
 private:
-    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, auth, song, currently_playing, searched;
+    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, song, currently_playing, searched;
     bool setup_statut = false;
     bool paused = false;
     int snapping_grid_size_x = 100;
@@ -25,10 +25,10 @@ private:
     bool snappingMode = false;
     bool keepRight = false;
     bool stoolEnabled = true;
+    int next_keybind_index = 0;
+    int previous_keybind_index = 0;
+    int pause_keybind_index = 0;
     bool skiptosong = false;
-    int text_color_r = 255;
-    int text_color_g = 255;
-    int text_color_b = 255;
     int duration_ms, duration, progress, progress_ms;
     bool song_sync = true;
     bool doOnce = true;
@@ -40,6 +40,14 @@ private:
     bool isWindowOpen_ = false;
     bool isMinimized_ = false;
     bool search_type = true;
+    bool show_color_picker = false;
+    float colorText_r = 1.0f;
+    float colorText_g = 0.0f;
+    float colorText_b = 0.0f;
+    float colorText_a = 1.0f;
+    std::string buffer_json_data = "";
+    bool come_from_deInit = false;
+    ImVec4 colorText = ImVec4(colorText_r, colorText_g, colorText_b, colorText_a);
     std::list<std::string> uri_list;
     ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoFocusOnAppearing;
@@ -79,10 +87,10 @@ private:
             HttpWrapper::SendCurlRequest(req, cache_path.wstring(), [this](int i, const std::wstring path)
                 {
                     LOG("File downloaded: {}", i);
-                    if (i == 200)
-                    {
-                        LoadImageData(path);
-                    }
+            if (i == 200)
+            {
+                LoadImageData(path);
+            }
                 });
         }
 
@@ -96,13 +104,14 @@ private:
 
 private:
 
+    void DebugLog(std::string path, std::string info);
     virtual void onLoad();
     virtual void onUnload();
     void SetImGuiContext(uintptr_t ctx) override;
     void DragWidget(ImGuiWindow* window);
+    void ShowColorPicker();
     void RenderSettings() override;
     void Render() override;
-    void DebugLog(std::string);
     void Sync_spotify();
     void Setup_spotify();
     void Refresh_token();

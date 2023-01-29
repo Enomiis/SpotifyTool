@@ -16,8 +16,9 @@ bakkesmod_directory = input("Directory to BakkesMod folder? ")
 web_browser = input("Which web browser are you using? ")
 web_browser = web_browser.lower()
 stool_directory = os.path.join(bakkesmod_directory, "SpotifyTool")
-stool_config = os.path.join(stool_directory, "stool_config.json")
-stool_logo = os.path.join(stool_directory, "spotifytool_logo.png")
+stool_config = os.path.join(stool_directory, "oauth_code.txt")
+stool_logo = os.path.join(stool_directory, "stool_logo.png")
+stool_log = os.path.join(stool_directory, "stool_log.log")
 os.chdir(bakkesmod_directory)
 if not os.path.exists(stool_directory):
     os.makedirs(stool_directory)
@@ -55,21 +56,10 @@ pyautogui.keyUp('ctrl')
 pyautogui.keyDown('ctrl')
 pyautogui.press('w')
 pyautogui.keyUp('ctrl')
-default_config = {
-    "access_token":"",
-    "artist":"",
-    "base64":"ZmI2YzkzZTk0NjNlNDEwM2E0YTA2YWRmNGQzNzM3ODY6NzcwMDg0NTAzOTg0NDdiNWE0ZjY1Yzg1NDI0YzZhMjU=",
-    "code":code,
-    "duration":0,
-    "picture":"",
-    "progress":0,
-    "refresh_token":"",
-    "setup_statut":False,
-    "song":""
-}
-json_object = json.dumps(default_config, indent = 4)
-open(stool_config, 'w').write(json_object)
+open(stool_config, 'w').write(code)
 if not os.path.exists(stool_logo):
     url = "https://cdn.discordapp.com/attachments/1018608568527749210/1018613685398274108/spotifytool_logo.png"
     r = requests.get(url, allow_redirects=True)
     open(stool_logo, 'wb').write(r.content)
+if not os.path.exists(stool_log):
+    open(stool_log, 'w').write("")
