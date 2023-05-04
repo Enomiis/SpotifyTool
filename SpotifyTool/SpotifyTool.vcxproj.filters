@@ -129,5 +129,6 @@
     <None Include="spotifytool.set">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

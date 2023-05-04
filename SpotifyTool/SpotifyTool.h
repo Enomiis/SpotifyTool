@@ -14,9 +14,10 @@ class SpotifyTool : public BakkesMod::Plugin::BakkesModPlugin,
     public BakkesMod::Plugin::PluginWindow
 {
 private:
-    std::string code_spotify, refresh_token, access_token, token, picture, artist, auth_bearer, song, currently_playing, searched;
-    bool setup_statut = false;
-    bool paused = false;
+    std::string title, artist;
+    uint8_t* data;
+    bool isThumbnail = false;
+    bool isWinRTInitialized = false;
     int snapping_grid_size_x = 100;
     int snapping_grid_size_y = 100;
     int screenSizeX = 1920;
@@ -28,79 +29,17 @@ private:
     int next_keybind_index = 0;
     int previous_keybind_index = 0;
     int pause_keybind_index = 0;
-    bool skiptosong = false;
-    int duration_ms, duration, progress, progress_ms;
-    bool song_sync = true;
-    bool doOnce = true;
-    bool skipped = true;
-    bool stool_free = false;
-    bool stool_ssong = false;
-    float counter, token_denied, song_duration, skip_delay;
     ImFont* myFont;
     bool isWindowOpen_ = false;
     bool isMinimized_ = false;
-    bool search_type = true;
     bool show_color_picker = false;
     float colorText_r = 1.0f;
     float colorText_g = 0.0f;
     float colorText_b = 0.0f;
     float colorText_a = 1.0f;
-    std::string buffer_json_data = "";
-    bool come_from_deInit = false;
     ImVec4 colorText = ImVec4(colorText_r, colorText_g, colorText_b, colorText_a);
-    std::list<std::string> uri_list;
     ImGuiWindowFlags WindowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize
         | ImGuiWindowFlags_NoFocusOnAppearing;
-    class ImageLinkWrapper
-    {
-        std::shared_ptr<ImageWrapper> m_image = nullptr;
-        std::string m_url;
-
-    public:
-        explicit ImageLinkWrapper(std::string url, std::shared_ptr<GameWrapper> gw)
-            : m_url(std::move(url))
-        {
-            const auto tmp_name = std::to_string(std::hash<std::string>{}(m_url));
-            const auto path = gw->GetDataFolder() / "imageCache" / tmp_name;
-            if (exists(path))
-            {
-                LOG("using image cache");
-                LoadImageData(path);
-            }
-            else
-            {
-                create_directories(path.parent_path());
-                DownloadImage(path);
-            }
-
-        }
-
-        [[nodiscard]] void* GetImguiPtr() const
-        {
-            return m_image != nullptr ? m_image->GetImGuiTex() : nullptr;
-        }
-
-    private:
-        void DownloadImage(const std::filesystem::path& cache_path)
-        {
-            const CurlRequest req{ m_url, "GET" };
-            HttpWrapper::SendCurlRequest(req, cache_path.wstring(), [this](int i, const std::wstring path)
-                {
-                    LOG("File downloaded: {}", i);
-            if (i == 200)
-            {
-                LoadImageData(path);
-            }
-                });
-        }
-
-        void LoadImageData(const std::filesystem::path& path)
-        {
-            LOG("Loading image data");
-            m_image = std::make_shared<ImageWrapper>(path, false, true);
-        }
-    };
-    std::shared_ptr<ImageLinkWrapper> cover;
 
 private:
 
@@ -112,14 +51,6 @@ private:
     void ShowColorPicker();
     void RenderSettings() override;
     void Render() override;
-    void Sync_spotify();
-    void Setup_spotify();
-    void Refresh_token();
-    void Skip_song();
-    void Prev_song();
-    void Pause_song();
-    void Search_spotify(std::string query, int amount);
-    void Queue_song();
     std::string GetPluginName();
     std::string GetMenuName();
     std::string GetMenuTitle();
@@ -127,4 +58,9 @@ private:
     bool IsActiveOverlay();
     void OnOpen();
     void OnClose();
+    bool InitializeWinRT();
+    void SyncSMTC();
+    void SkipSongSMTC();
+    void PreviousSongSMTC();
+    void TogglePausePlaySongSMTC();
 };

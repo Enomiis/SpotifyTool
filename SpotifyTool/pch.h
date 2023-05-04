@@ -4,6 +4,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 
+#include <winrt/base.h>
+#include <winrt/Windows.Media.Control.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Media.h>
+
 #include <string>
 #include <vector>
 #include <functional>
@@ -13,6 +18,11 @@
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
+
+#include <winrt/base.h>
+#include <winrt/Windows.Media.Control.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.Storage.Streams.h>
 
 extern std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
