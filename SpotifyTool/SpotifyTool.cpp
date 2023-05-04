@@ -265,7 +265,7 @@ void SpotifyTool::RenderSettings() {
     };
     ImGui::GetIO().WantCaptureMouse = true;
     ImGui::GetIO().WantCaptureKeyboard = true;
-    ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song on Spotify (Beta version). Huge thanks to the BakkesMod Programming Discord for carrying me to this <3");
+    ImGui::TextUnformatted("A Plugin for BM made to manage and display the currently playing song now on every support! (Beta version) Made by Maxime Madani, Thomas Dufeu & Enomis");
     CVarWrapper enableCvar = cvarManager->getCvar("stool_enabled");
     bool enabled = false;
     if (enableCvar) {
