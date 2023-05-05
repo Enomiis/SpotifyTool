@@ -30,6 +30,10 @@ const string NEXT_KEYBIND_INDEX = "stool_next_keybind_index";
 const string PREVIOUS_KEYBIND_INDEX = "stool_previous_keybind_index";
 const string PAUSE_KEYBIND_INDEX = "stool_pause_keybind_index";
 
+const string NEXT_COMMAND = "SkipSongSMTC";
+const string PREVIOUS_COMMAND = "PreviousSongSMTC";
+const string PAUSE_COMMAND = "TogglePlayPauseSMTC";
+
 const string COLOR_TEXT_R = "stool_colorText_r";
 const string COLOR_TEXT_G = "stool_colorText_g";
 const string COLOR_TEXT_B = "stool_colorText_b";
@@ -38,6 +42,8 @@ const string COLOR_TEXT_A = "stool_colorText_a";
 static string ROOT_DIRECTORY = "";
 static string LOG_FILE_PATH = "";
 static string LOGO_FILE_PATH = "";
+
+std::shared_ptr<GameWrapper> globalGW;
 
 void SpotifyTool::DebugLog(string path, string info) {
     fstream file(path, ios::app);
@@ -60,6 +66,8 @@ void SpotifyTool::DebugLog(string path, string info) {
 
 void SpotifyTool::onLoad() {
     _globalCvarManager = cvarManager;
+    globalGW = gameWrapper;
+
     ROOT_DIRECTORY = gameWrapper->GetBakkesModPath().string() + "\\SpotifyTool\\";
     LOG_FILE_PATH = ROOT_DIRECTORY + "stool_log.log";
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Initializing WinRT communication...");
@@ -82,6 +90,8 @@ void SpotifyTool::onLoad() {
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {
         stoolEnabled = cvar.getBoolValue();
             });
+
+    // Keybind indexes
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering/Fetching the keybind index for the Next song hotkey...");
     cvarManager->registerCvar(NEXT_KEYBIND_INDEX, "0", "Index for the next hotkey in the keybind list", true, true, 0, true, 69, true)
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {
@@ -97,6 +107,8 @@ void SpotifyTool::onLoad() {
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {
         pause_keybind_index = cvar.getIntValue();
             });
+
+    // Color
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering/Fetching the R-channel of the color for the text inside the widget...");
     cvarManager->registerCvar(COLOR_TEXT_R, "1.0f", "R-channel value of the color for the text inside the widget", true, true, 0.0f, true, 1.0f, true)
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {
@@ -119,42 +131,47 @@ void SpotifyTool::onLoad() {
             });
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Updating the color vector...");
     colorText = ImVec4(colorText_r, colorText_g, colorText_b, colorText_a);
+
+    // Keybind hotkeys
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering/Fetching the hotkey to skip the current song...");
     cvarManager->registerCvar(NEXT_HOTKEY, NEXT_KEYBIND, "Next song Hotkey", false)
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {});
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering the command notifier to skip the current song...");
     cvarManager->registerNotifier(
-        "SkipSong",
+        NEXT_COMMAND,
         [this](vector < string > args) {
             SkipSongSMTC();
         },
         "Skip the current song",
             PERMISSION_ALL
             );
+
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering/Fetching the hotkey to return to the previous song...");
     cvarManager->registerCvar(PREVIOUS_HOTKEY, PREVIOUS_KEYBIND, "Previous song Hotkey", false)
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {});
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering the command notifier to return to the previous song...");
     cvarManager->registerNotifier(
-        "PrevSong",
+        PREVIOUS_COMMAND,
         [this](vector < string > args) {
             PreviousSongSMTC();
         },
         "Jump to the previous song",
             PERMISSION_ALL
             );
+
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering/Fetching the hotkey to pause the current song...");
     cvarManager->registerCvar(PAUSE_HOTKEY, PAUSE_KEYBIND, "Pause/Resume song Hotkey", false)
         .addOnValueChanged([this](string oldValue, CVarWrapper cvar) {});
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Registering the command notifier to pause the current song...");
     cvarManager->registerNotifier(
-        "PlayPauseSong",
+        PAUSE_COMMAND,
         [this](vector < string > args) {
             TogglePausePlaySongSMTC();
         },
         "Pause/Resume the current song",
             PERMISSION_ALL
             );
+
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Loading the logo to display as a texture...");
     gameWrapper->LoadToastTexture("stool_logo", LOGO_FILE_PATH);
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Loading the toast to display...");
@@ -318,7 +335,7 @@ void SpotifyTool::RenderSettings() {
         next_keybind_index = next_index.getIntValue();
         cvarManager->removeBind(keybinds[next_keybind_index]);
         ImGui::Combo("Jump to next song", &next_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-        cvarManager->setBind(keybinds[next_keybind_index], "Skip_song");
+        cvarManager->setBind(keybinds[next_keybind_index], NEXT_COMMAND);
         CVarWrapper skipEnableCVar = cvarManager->getCvar(NEXT_HOTKEY);
         if (skipEnableCVar) {
             skipEnableCVar.setValue(keybinds[next_keybind_index]);
@@ -329,7 +346,7 @@ void SpotifyTool::RenderSettings() {
         previous_keybind_index = previous_index.getIntValue();
         cvarManager->removeBind(keybinds[previous_keybind_index]);
         ImGui::Combo("Jump to previous song", &previous_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-        cvarManager->setBind(keybinds[previous_keybind_index], "Prev_song");
+        cvarManager->setBind(keybinds[previous_keybind_index], PREVIOUS_COMMAND);
         CVarWrapper previousEnableCVar = cvarManager->getCvar(PREVIOUS_HOTKEY);
         if (previousEnableCVar) {
             previousEnableCVar.setValue(keybinds[previous_keybind_index]);
@@ -340,7 +357,7 @@ void SpotifyTool::RenderSettings() {
         pause_keybind_index = pause_index.getIntValue();
         cvarManager->removeBind(keybinds[pause_keybind_index]);
         ImGui::Combo("Pause/Resume the song", &pause_keybind_index, keybinds, IM_ARRAYSIZE(keybinds));
-        cvarManager->setBind(keybinds[pause_keybind_index], "Pause_song");
+        cvarManager->setBind(keybinds[pause_keybind_index], PAUSE_COMMAND);
         CVarWrapper pauseEnableCVar = cvarManager->getCvar(PAUSE_HOTKEY);
         if (pauseEnableCVar) {
             pauseEnableCVar.setValue(keybinds[pause_keybind_index]);
