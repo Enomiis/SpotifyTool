@@ -24,7 +24,7 @@ private:
     int screenSizeY = 1080;
     bool moveOverlay = false;
     bool snappingMode = false;
-    bool keepRight = false;
+    bool keepRight = true;
     bool stoolEnabled = true;
     int next_keybind_index = 0;
     int previous_keybind_index = 0;

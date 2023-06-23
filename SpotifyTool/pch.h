@@ -8,6 +8,10 @@
 #include <winrt/Windows.Media.Control.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Media.h>
+#include <winrt/Windows.Graphics.Imaging.h>
+#include <winrt/Windows.Storage.h>
+#include <winrt/Windows.Storage.Streams.h>
+#include <winrt/Windows.UI.Xaml.Media.Imaging.h>
 
 #include <string>
 #include <vector>
@@ -18,11 +22,6 @@
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
-
-#include <winrt/base.h>
-#include <winrt/Windows.Media.Control.h>
-#include <winrt/Windows.Foundation.Collections.h>
-#include <winrt/Windows.Storage.Streams.h>
 
 extern std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 

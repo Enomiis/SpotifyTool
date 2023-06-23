@@ -8,15 +8,20 @@
 #include <regex>
 #include "bakkesmod/wrappers/GuiManagerWrapper.h"
 
-BAKKESMOD_PLUGIN(SpotifyTool, "Music Manager Plugin", "0.1.1", PERMISSION_ALL)
+BAKKESMOD_PLUGIN(SpotifyTool, "Music Manager Plugin", "1.0.0", PERMISSION_ALL)
 using namespace std;
 using namespace winrt;
 using namespace Windows::Media::Control;
 using namespace Windows::Foundation;
 using namespace Windows::Foundation::Collections;
 using namespace Windows::Storage::Streams;
+using namespace Windows::Storage;
+using namespace Windows::Graphics::Imaging;
+using namespace filesystem;
 using json = nlohmann::json;
 shared_ptr < CVarManagerWrapper > _globalCvarManager;
+shared_ptr<GameWrapper> globalGW;
+shared_ptr < ImageWrapper > m_image;
 
 string NEXT_KEYBIND = "None";
 string PREVIOUS_KEYBIND = "None";
@@ -42,8 +47,6 @@ const string COLOR_TEXT_A = "stool_colorText_a";
 static string ROOT_DIRECTORY = "";
 static string LOG_FILE_PATH = "";
 static string LOGO_FILE_PATH = "";
-
-std::shared_ptr<GameWrapper> globalGW;
 
 void SpotifyTool::DebugLog(string path, string info) {
     fstream file(path, ios::app);
@@ -176,7 +179,18 @@ void SpotifyTool::onLoad() {
     gameWrapper->LoadToastTexture("stool_logo", LOGO_FILE_PATH);
     DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Loading the toast to display...");
     gameWrapper->Toast("MusicManager", "MusicManager loaded!", "stool_logo", 5.0, ToastType_Warning);
-    DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Finished initializing.");
+    DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Cleaning the cached images...");
+    const path imageCacheFolder = globalGW->GetDataFolder() / "imageCache";
+    try {
+        for (const auto& entry : directory_iterator(imageCacheFolder)) {
+            remove_all(entry.path());
+        }
+    }
+    catch (filesystem_error& e) {
+        DebugLog(LOG_FILE_PATH, "WARN: MusicManager::onLoad() -> A file couldn't be deleted! Reason: " + string(e.what()));
+    }
+    DebugLog(LOG_FILE_PATH, "INFO: MusicManager::onLoad() -> Finished initializing, syncing up the activity...");
+    SyncSMTC();
 }
 
 void SpotifyTool::onUnload() {
@@ -457,10 +471,16 @@ void SpotifyTool::Render() {
         }
         if (myFont) {
             if (isThumbnail) {
-                ImGui::Image(data, {
-                    80,
-                    80
-                    });
+                if (m_image != nullptr) {
+                    if (void* ptr = m_image->GetImGuiTex())
+                    {
+                        ImGui::Image(ptr, { 80, 80 });
+                    }
+                    else
+                    {
+                        ImGui::Text("Loading");
+                    }
+                }
             }
             ImGui::SameLine();
             ImGui::BeginGroup();
@@ -614,16 +634,38 @@ void SpotifyTool::SyncSMTC() {
 
     IRandomAccessStreamReference thumbnail = properties.Thumbnail();
     if (thumbnail) {
+        DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> Thumbnail recieved, creating it...");
         isThumbnail = true;
-        IRandomAccessStreamWithContentType data_stream = thumbnail.OpenReadAsync().get();
-        IBuffer buffer = Buffer(data_stream.Size());
-        buffer = data_stream.ReadAsync(buffer, data_stream.Size(), InputStreamOptions::None).get();
-        //data = buffer.data();
+        IRandomAccessStreamWithContentType stream = thumbnail.OpenReadAsync().get();
+        BitmapDecoder decoder = BitmapDecoder::CreateAsync(stream).get();
+        BitmapFrame frame = decoder.GetFrameAsync(0).get();
+        SoftwareBitmap softwareBitmap = decoder.GetSoftwareBitmapAsync().get();
+
+        const wstring tmp_name = std::to_wstring(std::hash<std::string>{}(title + artist));
+        const path directory = globalGW->GetDataFolder() / "imageCache" / tmp_name;
+        DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> Saving on/Loading from " + directory.string());
+        if (!exists(directory))
+        {
+            DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> Thumbnail isn't presend in cache, saving it...");
+            create_directories(directory.parent_path());
+            hstring directoryPath = hstring(directory.parent_path().wstring());
+            StorageFolder folder = StorageFolder::GetFolderFromPathAsync(directoryPath).get();
+            StorageFile file = folder.CreateFileAsync(hstring(tmp_name), CreationCollisionOption::ReplaceExisting).get();
+            IRandomAccessStream fileStream = file.OpenAsync(FileAccessMode::ReadWrite).get();
+            BitmapEncoder encoder = BitmapEncoder::CreateAsync(BitmapEncoder::JpegEncoderId(), fileStream).get();
+            encoder.SetSoftwareBitmap(softwareBitmap);
+            encoder.FlushAsync().get();
+            DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> Thumbnail saved successfully!");
+        }
+        else {
+            DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> Thumbnail already exists, no creation has been initiated...");
+        }
+        m_image = make_shared<ImageWrapper>(directory, false, true);
     }
     else {
         isThumbnail = false;
+        DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> No thumbnail available, skipping...");
     }
-    DebugLog(LOG_FILE_PATH, "INFO: SpotifyTool::SyncSMTC() -> IsThumbnail: " + to_string(isThumbnail));
 }
 
 void SpotifyTool::SkipSongSMTC() {
